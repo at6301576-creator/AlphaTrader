@@ -1,0 +1,30 @@
+{
+  "buildCommand": "npm run build",
+  "devCommand": "npm run dev",
+  "installCommand": "npm install",
+  "framework": "nextjs",
+  "env": {
+    "DATABASE_URL": "@database_url",
+    "DIRECT_URL": "@direct_url",
+    "NEXTAUTH_SECRET": "@nextauth_secret",
+    "NEXTAUTH_URL": "@nextauth_url",
+    "ALPHA_VANTAGE_API_KEY": "@alpha_vantage_api_key",
+    "FINNHUB_API_KEY": "@finnhub_api_key",
+    "OPENAI_API_KEY": "@openai_api_key",
+    "NODE_ENV": "production"
+  },
+  "crons": [
+    {
+      "path": "/api/cron/snapshot",
+      "schedule": "0 21 * * 1-5"
+    },
+    {
+      "path": "/api/cron/check-alerts",
+      "schedule": "*/5 14-21 * * 1-5"
+    },
+    {
+      "path": "/api/cron/cleanup",
+      "schedule": "0 0 * * *"
+    }
+  ]
+}

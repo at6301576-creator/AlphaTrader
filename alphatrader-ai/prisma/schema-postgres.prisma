@@ -1,0 +1,183 @@
+// Production schema for PostgreSQL
+// Use this for deployment on Vercel or other cloud platforms
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL") // For connection pooling on Vercel
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  password      String
+  riskProfile   String    @default("moderate") // conservative, moderate, aggressive
+  tradingExp    String    @default("beginner") // beginner, intermediate, advanced
+  shariahMode   Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  portfolios    Portfolio[]
+  watchlists    Watchlist[]
+  alerts        Alert[]
+  scanHistory   ScanHistory[]
+
+  @@index([email])
+}
+
+model Portfolio {
+  id            String    @id @default(cuid())
+  userId        String
+  symbol        String
+  companyName   String?
+  shares        Float
+  avgCost       Float
+  currency      String    @default("USD")
+  purchaseDate  DateTime?
+  notes         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([symbol])
+}
+
+model Watchlist {
+  id            String    @id @default(cuid())
+  userId        String
+  name          String
+  description   String?
+  symbols       String    // JSON array of symbols
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Alert {
+  id            String    @id @default(cuid())
+  userId        String
+  symbol        String
+  companyName   String?
+  alertType     String    // price_above, price_below, percent_change, rsi, macd, news
+  condition     String    // above, below, crosses_above, crosses_below
+  threshold     Float?
+  message       String?
+  isActive      Boolean   @default(true)
+  triggeredAt   DateTime?
+  createdAt     DateTime  @default(now())
+
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([symbol])
+  @@index([isActive])
+}
+
+model ScanHistory {
+  id            String    @id @default(cuid())
+  userId        String
+  scanType      String    // undervalued, momentum, dividend, growth, shariah
+  markets       String    // JSON array of market codes
+  parameters    String    // JSON of scan parameters
+  resultsCount  Int
+  topResults    String?   // JSON of top 10 results for quick reference
+  createdAt     DateTime  @default(now())
+
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model StockCache {
+  id                  String    @id @default(cuid())
+  symbol              String    @unique
+  name                String?
+  exchange            String?
+  sector              String?
+  industry            String?
+  country             String?
+  currency            String    @default("USD")
+
+  // Price data
+  currentPrice        Float?
+  previousClose       Float?
+  open                Float?
+  dayHigh             Float?
+  dayLow              Float?
+  volume              Float?
+  avgVolume           Float?
+
+  // Fundamentals
+  marketCap           Float?
+  peRatio             Float?
+  forwardPE           Float?
+  pbRatio             Float?
+  psRatio             Float?
+  pegRatio            Float?
+  dividendYield       Float?
+  dividendRate        Float?
+  payoutRatio         Float?
+  beta                Float?
+  week52High          Float?
+  week52Low           Float?
+  eps                 Float?
+  revenueGrowth       Float?
+  earningsGrowth      Float?
+  profitMargin        Float?
+  operatingMargin     Float?
+  roe                 Float?
+  roa                 Float?
+  debtToEquity        Float?
+  currentRatio        Float?
+  quickRatio          Float?
+  freeCashFlow        Float?
+
+  // Shariah compliance
+  isShariahCompliant  Boolean?
+  shariahDetails      String?   // JSON with detailed screening results
+
+  // Technical data
+  technicalData       String?   // JSON with indicators
+
+  // Full fundamental data
+  fundamentalData     String?   // JSON with detailed financials
+
+  // Chart data (for caching)
+  chartData           String?   // JSON with OHLCV data
+
+  lastUpdated         DateTime  @default(now())
+
+  @@index([symbol])
+  @@index([exchange])
+  @@index([sector])
+  @@index([isShariahCompliant])
+  @@index([lastUpdated])
+}
+
+model NewsCache {
+  id            String    @id @default(cuid())
+  symbol        String
+  title         String
+  summary       String?
+  source        String?
+  url           String?
+  imageUrl      String?
+  sentiment     String?   // positive, negative, neutral
+  sentimentScore Float?
+  publishedAt   DateTime
+  createdAt     DateTime  @default(now())
+
+  @@index([symbol])
+  @@index([publishedAt])
+}

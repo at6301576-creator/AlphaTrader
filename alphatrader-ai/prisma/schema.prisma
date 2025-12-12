@@ -1,0 +1,300 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  password      String
+  riskProfile   String    @default("moderate") // conservative, moderate, aggressive
+  tradingExp    String    @default("beginner") // beginner, intermediate, advanced
+  shariahMode   Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  portfolios        Portfolio[]
+  watchlists        Watchlist[]
+  alerts            Alert[]
+  technicalAlerts   TechnicalAlert[]
+  scanHistory       ScanHistory[]
+  pushSubscriptions PushSubscription[]
+}
+
+model Portfolio {
+  id            String    @id @default(cuid())
+  userId        String
+  symbol        String
+  companyName   String?
+  shares        Float
+  avgCost       Float
+  currency      String    @default("USD")
+  purchaseDate  DateTime?
+  soldDate      DateTime?
+  soldPrice     Float?
+  notes         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([symbol])
+}
+
+model PortfolioSnapshot {
+  id                String    @id @default(cuid())
+  userId            String
+  totalValue        Float
+  totalCost         Float
+  totalGainLoss     Float
+  totalGainLossPerc Float
+  dayChange         Float?
+  dayChangePerc     Float?
+  holdings          String    // JSON array of holdings with current values
+  sectorAllocation  String?   // JSON object with sector breakdown
+  assetAllocation   String?   // JSON object with asset type breakdown
+  topPerformers     String?   // JSON array of top 5 gainers
+  topLosers         String?   // JSON array of top 5 losers
+  createdAt         DateTime  @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model ScreenerPreset {
+  id            String    @id @default(cuid())
+  userId        String
+  name          String
+  description   String?
+  filters       String    // JSON object with filter criteria
+  isPublic      Boolean   @default(false)
+  usageCount    Int       @default(0)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([isPublic])
+}
+
+model Watchlist {
+  id            String    @id @default(cuid())
+  userId        String
+  name          String
+  description   String?
+  symbols       String    // JSON array of symbols
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Alert {
+  id              String    @id @default(cuid())
+  userId          String
+  symbol          String
+  companyName     String?
+  alertType       String    // price_above, price_below, percent_change, rsi_oversold, rsi_overbought, macd_cross, volume_spike, news
+  condition       String    // above, below, crosses_above, crosses_below, equals, percent_up, percent_down
+  threshold       Float?
+  percentValue    Float?    // For percent_change alerts
+  message         String?
+  notifyEmail     Boolean   @default(false)
+  notifyInApp     Boolean   @default(true)
+  isActive        Boolean   @default(true)
+  triggeredAt     DateTime?
+  lastChecked     DateTime?
+  triggerCount    Int       @default(0)
+  repeatAlert     Boolean   @default(false)  // Whether to trigger multiple times
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([symbol])
+  @@index([isActive])
+  @@index([alertType])
+}
+
+model ScanHistory {
+  id            String    @id @default(cuid())
+  userId        String
+  scanType      String    // undervalued, momentum, dividend, growth, shariah
+  markets       String    // JSON array of market codes
+  parameters    String    // JSON of scan parameters
+  resultsCount  Int
+  topResults    String?   // JSON of top 10 results for quick reference
+  createdAt     DateTime  @default(now())
+
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model StockCache {
+  id                  String    @id @default(cuid())
+  symbol              String    @unique
+  name                String?
+  exchange            String?
+  sector              String?
+  industry            String?
+  country             String?
+  currency            String    @default("USD")
+
+  // Price data
+  currentPrice        Float?
+  previousClose       Float?
+  open                Float?
+  dayHigh             Float?
+  dayLow              Float?
+  volume              Float?
+  avgVolume           Float?
+
+  // Fundamentals
+  marketCap           Float?
+  peRatio             Float?
+  forwardPE           Float?
+  pbRatio             Float?
+  psRatio             Float?
+  pegRatio            Float?
+  dividendYield       Float?
+  dividendRate        Float?
+  payoutRatio         Float?
+  beta                Float?
+  week52High          Float?
+  week52Low           Float?
+  eps                 Float?
+  revenueGrowth       Float?
+  earningsGrowth      Float?
+  profitMargin        Float?
+  operatingMargin     Float?
+  roe                 Float?
+  roa                 Float?
+  debtToEquity        Float?
+  currentRatio        Float?
+  quickRatio          Float?
+  freeCashFlow        Float?
+
+  // Shariah compliance
+  isShariahCompliant  Boolean?
+  shariahDetails      String?   // JSON with detailed screening results
+
+  // Technical data
+  technicalData       String?   // JSON with indicators
+
+  // Full fundamental data
+  fundamentalData     String?   // JSON with detailed financials
+
+  // Chart data (for caching)
+  chartData           String?   // JSON with OHLCV data
+
+  lastUpdated         DateTime  @default(now())
+
+  @@index([symbol])
+  @@index([exchange])
+  @@index([sector])
+  @@index([isShariahCompliant])
+  @@index([marketCap])
+  @@index([peRatio])
+  @@index([dividendYield])
+  @@index([lastUpdated])
+}
+
+model NewsCache {
+  id            String    @id @default(cuid())
+  symbol        String
+  title         String
+  summary       String?
+  source        String?
+  url           String?
+  imageUrl      String?
+  sentiment     String?   // positive, negative, neutral
+  sentimentScore Float?
+  publishedAt   DateTime
+  createdAt     DateTime  @default(now())
+
+  @@index([symbol])
+  @@index([publishedAt])
+}
+
+model PushSubscription {
+  id        String    @id @default(cuid())
+  userId    String
+  endpoint  String
+  p256dh    String    // Public key for encryption
+  auth      String    // Auth secret for encryption
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, endpoint])
+  @@index([userId])
+}
+
+model TechnicalAlert {
+  id              String    @id @default(cuid())
+  userId          String
+  symbol          String
+  companyName     String?
+
+  // Indicator type: rsi, macd, stochastic, ma_crossover, bollinger_bands
+  indicatorType   String
+
+  // Alert condition: overbought, oversold, bullish_crossover, bearish_crossover, crosses_above, crosses_below
+  condition       String
+
+  // Indicator parameters (JSON)
+  // RSI: { period: 14, overboughtLevel: 70, oversoldLevel: 30 }
+  // MACD: { fastPeriod: 12, slowPeriod: 26, signalPeriod: 9 }
+  // Stochastic: { kPeriod: 14, dPeriod: 3, overboughtLevel: 80, oversoldLevel: 20 }
+  // MA Crossover: { fastPeriod: 50, slowPeriod: 200, type: 'sma' or 'ema' }
+  // Bollinger Bands: { period: 20, stdDev: 2, condition: 'price_above_upper' or 'price_below_lower' }
+  parameters      String    // JSON string
+
+  // Threshold value (if applicable)
+  threshold       Float?
+
+  // Last known indicator value when checked
+  lastValue       Float?
+
+  // Message/note for the alert
+  message         String?
+
+  // Notification preferences
+  notifyEmail     Boolean   @default(false)
+  notifyPush      Boolean   @default(true)
+  notifyInApp     Boolean   @default(true)
+
+  // Alert status
+  isActive        Boolean   @default(true)
+  triggeredAt     DateTime?
+  lastChecked     DateTime?
+  triggerCount    Int       @default(0)
+
+  // Whether to trigger multiple times or only once
+  repeatAlert     Boolean   @default(false)
+
+  // Cooldown period in minutes (to avoid spam)
+  cooldownMinutes Int       @default(60)
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([symbol])
+  @@index([isActive])
+  @@index([indicatorType])
+  @@index([lastChecked])
+}
