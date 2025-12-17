@@ -5,9 +5,12 @@ import { CreateTechnicalAlertDialog } from "@/components/alerts/CreateTechnicalA
 import { TechnicalAlertsList } from "@/components/alerts/TechnicalAlertsList";
 import { Button } from "@/components/ui/button";
 import { Bell, Plus } from "lucide-react";
+import { useSubscription } from "@/hooks/useSubscription";
+import { UsageLimitBadge } from "@/components/subscription/UsageLimitBadge";
 
 export default function AlertsPage() {
   const [refreshKey, setRefreshKey] = useState(0);
+  const { subscription } = useSubscription();
 
   const handleAlertChange = () => {
     // Trigger refresh of alerts list
@@ -20,10 +23,16 @@ export default function AlertsPage() {
       <div className="mb-8">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold flex items-center gap-3">
-              <Bell className="h-8 w-8 text-blue-500" />
-              Technical Alerts
-            </h1>
+            <div className="flex items-center gap-3 mb-2">
+              <h1 className="text-3xl font-bold flex items-center gap-3">
+                <Bell className="h-8 w-8 text-blue-500" />
+                Technical Alerts
+              </h1>
+              <UsageLimitBadge
+                usageType="alertsPerMonth"
+                currentUsage={subscription?.alertsUsedThisMonth || 0}
+              />
+            </div>
             <p className="text-gray-400 mt-2">
               Monitor technical indicators and get notified when conditions are met
             </p>

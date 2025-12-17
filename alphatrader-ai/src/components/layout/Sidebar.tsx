@@ -80,7 +80,7 @@ export function Sidebar({ user }: SidebarProps) {
   }, []);
 
   const handleSignOut = () => {
-    signOut({ callbackUrl: "/login" });
+    signOut({ callbackUrl: "/" });
   };
 
   return (

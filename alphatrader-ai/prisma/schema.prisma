@@ -24,6 +24,7 @@ model User {
   technicalAlerts   TechnicalAlert[]
   scanHistory       ScanHistory[]
   pushSubscriptions PushSubscription[]
+  subscription      Subscription?
 }
 
 model Portfolio {
@@ -297,4 +298,40 @@ model TechnicalAlert {
   @@index([isActive])
   @@index([indicatorType])
   @@index([lastChecked])
+}
+
+model Subscription {
+  id                String    @id @default(cuid())
+  userId            String    @unique
+  tier              String    @default("STARTER") // STARTER, PROFESSIONAL, ENTERPRISE
+  status            String    @default("ACTIVE")  // ACTIVE, CANCELED, PAST_DUE, TRIALING, INCOMPLETE, PAUSED
+
+  // Payment details (for future Stripe integration)
+  stripeCustomerId      String?   @unique
+  stripeSubscriptionId  String?   @unique
+  stripePriceId         String?
+
+  // Billing period
+  currentPeriodStart    DateTime?
+  currentPeriodEnd      DateTime?
+  cancelAtPeriodEnd     Boolean   @default(false)
+  canceledAt            DateTime?
+
+  // Trial period
+  trialStart            DateTime?
+  trialEnd              DateTime?
+
+  // Usage tracking
+  alertsUsedThisMonth   Int       @default(0)
+  apiCallsThisMonth     Int       @default(0)
+  lastResetAt           DateTime  @default(now())
+
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([tier])
+  @@index([status])
 }

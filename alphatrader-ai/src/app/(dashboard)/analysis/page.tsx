@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/select";
 import { BenchmarkComparison } from "@/components/analysis/BenchmarkComparison";
 import { OptimizationSuggestionsCard } from "@/components/portfolio/OptimizationSuggestionsCard";
+import { FeatureGate } from "@/components/subscription/FeatureGate";
 
 interface AnalyticsData {
   currentValue: number;
@@ -248,17 +249,21 @@ export default function AnalysisPage() {
         </CardContent>
       </Card>
 
-      {/* Benchmark Comparison */}
-      <BenchmarkComparison
-        portfolioData={analytics.historicalData.map(d => ({
-          date: d.date,
-          value: d.value
-        }))}
-        period={period}
-      />
+      {/* Benchmark Comparison - Professional+ */}
+      <FeatureGate feature="portfolioAnalytics">
+        <BenchmarkComparison
+          portfolioData={analytics.historicalData.map(d => ({
+            date: d.date,
+            value: d.value
+          }))}
+          period={period}
+        />
+      </FeatureGate>
 
-      {/* Portfolio Optimization Suggestions */}
-      <OptimizationSuggestionsCard period={period} />
+      {/* Portfolio Optimization Suggestions - Professional+ */}
+      <FeatureGate feature="portfolioOptimization">
+        <OptimizationSuggestionsCard period={period} />
+      </FeatureGate>
 
       {/* Best/Worst Days & Sector Allocation */}
       <div className="grid gap-4 md:grid-cols-2">

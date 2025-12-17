@@ -5,6 +5,8 @@ import { screenShariahCompliance } from "@/services/shariah-screener";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { StockChart } from "@/components/analysis/StockChart";
 import { TechnicalPanel } from "@/components/analysis/TechnicalPanel";
 import { FundamentalsPanel } from "@/components/analysis/FundamentalsPanel";
@@ -20,6 +22,12 @@ import {
   TrendingUp,
   TrendingDown,
   ArrowLeft,
+  BarChart3,
+  LineChart,
+  Newspaper,
+  Bell,
+  Info,
+  ShieldCheck,
 } from "lucide-react";
 import Link from "next/link";
 import type { Stock } from "@/types/stock";
@@ -181,11 +189,27 @@ export default async function StockPage({ params }: StockPageProps) {
         <CardContent className="p-6">
           <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
             <div>
-              <div className="flex items-center gap-3 mb-2">
-                <h1 className="text-3xl font-bold">{stock.symbol}</h1>
+              <div className="flex items-center flex-wrap gap-2 sm:gap-3 mb-2">
+                <h1 className="text-2xl sm:text-3xl font-bold">{stock.symbol}</h1>
                 {stock.exchange && (
-                  <Badge variant="outline" className="text-gray-400 border-gray-700">
+                  <Badge variant="outline" className="text-gray-400 border-gray-700 text-xs sm:text-sm">
                     {stock.exchange}
+                  </Badge>
+                )}
+                {shariahDetails && (
+                  <Badge
+                    variant="outline"
+                    className={`font-semibold text-xs sm:text-sm ${
+                      shariahDetails.overallStatus === "compliant"
+                        ? "text-emerald-400 border-emerald-700 bg-emerald-950/30"
+                        : shariahDetails.overallStatus === "non-compliant"
+                        ? "text-red-400 border-red-700 bg-red-950/30"
+                        : "text-yellow-400 border-yellow-700 bg-yellow-950/30"
+                    }`}
+                  >
+                    {shariahDetails.overallStatus === "compliant" ? "✓ Shariah Compliant" :
+                     shariahDetails.overallStatus === "non-compliant" ? "✗ Not Shariah Compliant" :
+                     "⚠ Doubtful"}
                   </Badge>
                 )}
               </div>
@@ -204,18 +228,18 @@ export default async function StockPage({ params }: StockPageProps) {
               </div>
             </div>
             <div className="text-left md:text-right">
-              <div className="text-4xl font-bold mb-1">
+              <div className="text-3xl sm:text-4xl font-bold mb-1">
                 {formatPrice(stock.currentPrice)}
               </div>
               <div
-                className={`flex items-center justify-start md:justify-end text-lg ${
+                className={`flex items-center justify-start md:justify-end text-base sm:text-lg ${
                   priceChange >= 0 ? "text-emerald-500" : "text-red-500"
                 }`}
               >
                 {priceChange >= 0 ? (
-                  <TrendingUp className="h-5 w-5 mr-1" />
+                  <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 mr-1" />
                 ) : (
-                  <TrendingDown className="h-5 w-5 mr-1" />
+                  <TrendingDown className="h-4 w-4 sm:h-5 sm:w-5 mr-1" />
                 )}
                 {priceChange >= 0 ? "+" : ""}
                 {priceChange.toFixed(2)}%
@@ -225,87 +249,256 @@ export default async function StockPage({ params }: StockPageProps) {
         </CardContent>
       </Card>
 
-      {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column - Chart and Panels */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Price Chart */}
-          <div className="animate-in fade-in slide-in-from-left-4" style={{ animationDelay: '200ms', animationFillMode: 'backwards' }}>
-            <StockChart
-              symbol={stock.symbol}
-              data={historicalData}
-            />
-          </div>
+      {/* Tabbed Content */}
+      <Tabs defaultValue="overview" className="space-y-6">
+        <div className="w-full bg-gray-900 border border-gray-800 rounded-lg p-1 overflow-x-auto">
+          <TooltipProvider>
+            <TabsList className="bg-transparent w-auto inline-flex gap-1 min-w-min">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <TabsTrigger value="overview" className="data-[state=active]:bg-emerald-600 flex items-center justify-center gap-2">
+                    <Info className="h-4 w-4 flex-shrink-0" />
+                    <span className="hidden sm:block">Overview</span>
+                  </TabsTrigger>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Stock overview and quick metrics</p>
+                </TooltipContent>
+              </Tooltip>
 
-          {/* Technical Analysis */}
-          {technicalIndicators && (
-            <div className="animate-in fade-in slide-in-from-left-4" style={{ animationDelay: '300ms', animationFillMode: 'backwards' }}>
-              <TechnicalPanel
-                technicals={technicalIndicators}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <TabsTrigger value="technical" className="data-[state=active]:bg-emerald-600 flex items-center justify-center gap-2">
+                    <LineChart className="h-4 w-4 flex-shrink-0" />
+                    <span className="hidden sm:block">Technical</span>
+                  </TabsTrigger>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Technical indicators and chart analysis</p>
+                </TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <TabsTrigger value="fundamentals" className="data-[state=active]:bg-emerald-600 flex items-center justify-center gap-2">
+                    <BarChart3 className="h-4 w-4 flex-shrink-0" />
+                    <span className="hidden sm:block">Fundamentals</span>
+                  </TabsTrigger>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Financial statements and key metrics</p>
+                </TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <TabsTrigger value="news" className="data-[state=active]:bg-emerald-600 flex items-center justify-center gap-2">
+                    <Newspaper className="h-4 w-4 flex-shrink-0" />
+                    <span className="hidden sm:block">News</span>
+                  </TabsTrigger>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Latest news and sentiment analysis</p>
+                </TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <TabsTrigger value="alerts" className="data-[state=active]:bg-emerald-600 flex items-center justify-center gap-2">
+                    <Bell className="h-4 w-4 flex-shrink-0" />
+                    <span className="hidden sm:block">Alerts</span>
+                  </TabsTrigger>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Set up price and technical alerts</p>
+                </TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <TabsTrigger value="shariah" className="data-[state=active]:bg-emerald-600 flex items-center justify-center gap-2">
+                    <ShieldCheck className="h-4 w-4 flex-shrink-0" />
+                    <span className="hidden sm:block">Shariah</span>
+                  </TabsTrigger>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Shariah compliance screening and details</p>
+                </TooltipContent>
+              </Tooltip>
+            </TabsList>
+          </TooltipProvider>
+        </div>
+
+        {/* Overview Tab */}
+        <TabsContent value="overview" className="space-y-6">
+          {/* Full Width Chart */}
+          <StockChart
+            symbol={stock.symbol}
+            data={historicalData}
+          />
+
+          {/* Two Column Layout for Cards */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Left Column */}
+            <div className="space-y-6">
+              {/* Key Metrics */}
+              {technicalIndicators && (
+                <Card className="bg-gray-900 border-gray-800">
+                  <CardHeader>
+                    <CardTitle>Quick Metrics</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <div className="text-sm text-gray-400">Signal</div>
+                        <div className={`font-bold text-lg ${
+                          technicalIndicators.overallSignal.includes("buy") ? "text-green-500" :
+                          technicalIndicators.overallSignal.includes("sell") ? "text-red-500" :
+                          "text-yellow-500"
+                        }`}>
+                          {technicalIndicators.overallSignal.replace("_", " ").toUpperCase()}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-sm text-gray-400">RSI (14)</div>
+                        <div className="font-bold text-lg text-white">
+                          {technicalIndicators.rsi?.toFixed(1) || "N/A"}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-sm text-gray-400">ATR</div>
+                        <div className="font-bold text-lg text-white">
+                          ${technicalIndicators.atr?.toFixed(2) || "N/A"}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-sm text-gray-400">ADX</div>
+                        <div className="font-bold text-lg text-white">
+                          {technicalIndicators.adx?.toFixed(1) || "N/A"}
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+              <AnalystRatings symbol={stock.symbol} currentPrice={stock.currentPrice} />
+            </div>
+
+            {/* Right Column */}
+            <div className="space-y-6">
+              <NewsSentimentCard symbol={stock.symbol} days={7} />
+              <AIAnalysis symbol={stock.symbol} />
+            </div>
+          </div>
+        </TabsContent>
+
+        {/* Technical Tab */}
+        <TabsContent value="technical" className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-3">
+              <StockChart
+                symbol={stock.symbol}
+                data={historicalData}
               />
             </div>
-          )}
-
-          {/* Fundamentals */}
-          <div className="animate-in fade-in slide-in-from-left-4" style={{ animationDelay: '400ms', animationFillMode: 'backwards' }}>
-            <FundamentalsPanel stock={stock} />
+            {technicalIndicators && (
+              <div className="lg:col-span-3">
+                <TechnicalPanel technicals={technicalIndicators} />
+              </div>
+            )}
           </div>
+        </TabsContent>
 
-          {/* News Section */}
-          <div className="animate-in fade-in slide-in-from-left-4" style={{ animationDelay: '500ms', animationFillMode: 'backwards' }}>
-            <NewsSection news={news} symbol={stock.symbol} />
+        {/* Fundamentals Tab */}
+        <TabsContent value="fundamentals" className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2">
+              <FundamentalsPanel stock={stock} />
+            </div>
+            <div className="space-y-6">
+              <AnalystRatings symbol={stock.symbol} currentPrice={stock.currentPrice} />
+            </div>
           </div>
-        </div>
+        </TabsContent>
 
-        {/* Right Column - Sidebar */}
-        <div className="space-y-6">
-          {/* Analyst Ratings */}
-          <div className="animate-in fade-in slide-in-from-right-4" style={{ animationDelay: '200ms', animationFillMode: 'backwards' }}>
-            <AnalystRatings symbol={stock.symbol} currentPrice={stock.currentPrice} />
+        {/* News Tab */}
+        <TabsContent value="news" className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2">
+              <NewsSection news={news} symbol={stock.symbol} />
+            </div>
+            <div>
+              <NewsSentimentCard symbol={stock.symbol} days={7} />
+            </div>
           </div>
+        </TabsContent>
 
-          {/* News Sentiment Analysis */}
-          <div className="animate-in fade-in slide-in-from-right-4" style={{ animationDelay: '250ms', animationFillMode: 'backwards' }}>
-            <NewsSentimentCard symbol={stock.symbol} days={7} />
-          </div>
-
-          {/* Shariah Compliance */}
-          <div className="animate-in fade-in slide-in-from-right-4" style={{ animationDelay: '300ms', animationFillMode: 'backwards' }}>
-            <ShariahPanel details={shariahDetails} />
-          </div>
-
-          {/* AI Analysis */}
-          <div className="animate-in fade-in slide-in-from-right-4" style={{ animationDelay: '400ms', animationFillMode: 'backwards' }}>
-            <AIAnalysis symbol={stock.symbol} />
-          </div>
-
-          {/* Technical Alerts */}
-          <div className="animate-in fade-in slide-in-from-right-4" style={{ animationDelay: '500ms', animationFillMode: 'backwards' }}>
-            <Card className="bg-gray-900 border-gray-800">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg">Technical Alerts</CardTitle>
-                  <CreateTechnicalAlertDialog
-                    symbol={stock.symbol}
-                    companyName={stock.name || undefined}
-                    trigger={
-                      <Button size="sm" variant="outline" className="text-xs">
-                        Create Alert
-                      </Button>
-                    }
-                  />
+        {/* Alerts Tab */}
+        <TabsContent value="alerts" className="space-y-6">
+          <Card className="bg-gray-900 border-gray-800">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Technical Alerts</CardTitle>
+                  <CardDescription>
+                    Set up and manage alerts for technical indicator conditions
+                  </CardDescription>
                 </div>
-                <CardDescription>
-                  Active alerts for {stock.symbol}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <TechnicalAlertsList symbol={stock.symbol} />
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </div>
+                <CreateTechnicalAlertDialog
+                  symbol={stock.symbol}
+                  companyName={stock.name || undefined}
+                  trigger={
+                    <Button variant="default" className="bg-emerald-600 hover:bg-emerald-700">
+                      <Bell className="h-4 w-4 mr-2" />
+                      Create Alert
+                    </Button>
+                  }
+                />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <TechnicalAlertsList symbol={stock.symbol} />
+            </CardContent>
+          </Card>
+
+          {/* Alert Guide */}
+          <Card className="bg-gray-900 border-gray-800">
+            <CardHeader>
+              <CardTitle>Alert Types</CardTitle>
+              <CardDescription>Available technical indicator alerts</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3 text-sm">
+                <div>
+                  <div className="font-semibold text-white">RSI Alerts</div>
+                  <div className="text-gray-400">Get notified when RSI crosses overbought (70) or oversold (30) levels</div>
+                </div>
+                <div>
+                  <div className="font-semibold text-white">MACD Crossover</div>
+                  <div className="text-gray-400">Alert on bullish or bearish MACD crossovers</div>
+                </div>
+                <div>
+                  <div className="font-semibold text-white">Moving Average Crossover</div>
+                  <div className="text-gray-400">Golden Cross (bullish) or Death Cross (bearish) signals</div>
+                </div>
+                <div>
+                  <div className="font-semibold text-white">Bollinger Bands</div>
+                  <div className="text-gray-400">Price breaking above upper band or below lower band</div>
+                </div>
+                <div>
+                  <div className="font-semibold text-white">Stochastic</div>
+                  <div className="text-gray-400">Overbought/oversold conditions and crossover signals</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Shariah Tab */}
+        <TabsContent value="shariah" className="space-y-6">
+          <ShariahPanel details={shariahDetails} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

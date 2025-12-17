@@ -38,8 +38,9 @@ export async function getBenchmarkQuote(symbol: string): Promise<BenchmarkData |
 
     console.log(`[getBenchmarkQuote] Fetching fresh quote for ${symbol} from Yahoo Finance`);
 
-    // Use yahoo-finance2 library
-    const yahooFinance = (await import("yahoo-finance2")).default;
+    // Use yahoo-finance2 library v3 API
+    const YahooFinanceModule = await import("yahoo-finance2");
+    const yahooFinance = new YahooFinanceModule.default();
 
     const quote = await yahooFinance.quote(symbol) as any;
 
@@ -123,8 +124,9 @@ export async function getBenchmarkHistory(
 
     console.log(`[getBenchmarkHistory] Fetching ${symbol} from ${startDate.toISOString()} to ${endDate.toISOString()}`);
 
-    // Use yahoo-finance2 library
-    const yahooFinance = (await import("yahoo-finance2")).default;
+    // Use yahoo-finance2 library v3 API
+    const YahooFinanceModule = await import("yahoo-finance2");
+    const yahooFinance = new YahooFinanceModule.default();
 
     const queryOptions = {
       period1: startDate,

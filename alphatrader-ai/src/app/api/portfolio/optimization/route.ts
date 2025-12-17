@@ -29,23 +29,23 @@ interface PortfolioOptimizationResponse {
 export async function GET(request: NextRequest) {
   const session = await auth();
 
-  if (!session?.user?.email) {
+  if (!session?.user?.id) {
     console.error("[Portfolio Optimization] Unauthorized access attempt");
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  console.log(`[Portfolio Optimization] Request started for user: ${session.user.email}`);
+  console.log(`[Portfolio Optimization] Request started for user: ${session.user.id} (${session.user.email})`);
 
   try {
     // Fetch all portfolio holdings for the user
     const holdings = await prisma.portfolio.findMany({
       where: {
-        userId: session.user.email,
+        userId: session.user.id,
         soldDate: null, // Only active holdings
       },
     });
 
-    console.log(`[Portfolio Optimization] Fetched ${holdings.length} holdings for user: ${session.user.email}`);
+    console.log(`[Portfolio Optimization] Fetched ${holdings.length} holdings for user: ${session.user.id}`);
 
     if (holdings.length === 0) {
       return NextResponse.json({
@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
 
     const snapshots = await prisma.portfolioSnapshot.findMany({
       where: {
-        userId: session.user.email,
+        userId: session.user.id,
         createdAt: { gte: startDate },
       },
       orderBy: { createdAt: "asc" },

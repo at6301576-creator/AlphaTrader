@@ -14,9 +14,9 @@
 
 - 📈 **Stock Analysis** - Comprehensive stock analysis with:
   - Real-time price data
-  - Technical indicators (MA, RSI, MACD, Bollinger Bands)
+  - 13+ technical indicators (RSI, MACD, Bollinger Bands, ATR, ADX, CCI, etc.)
   - Fundamental metrics (P/E, P/B, ROE, debt ratios)
-  - Price charts and historical data
+  - Interactive price charts with TradingView-style indicators
 
 - ☪️ **Shariah Screening** - Full Islamic finance compliance checking:
   - Business activity screening
@@ -24,15 +24,31 @@
   - Purification calculations
 
 - 💼 **Portfolio Management** - Track your investments:
-  - Multiple positions with cost basis
+  - Multiple positions with cost basis tracking
   - Real-time P&L calculations
-  - Performance analytics
+  - Advanced analytics (Sharpe ratio, volatility, best/worst days)
+  - Benchmark comparison (S&P 500, NASDAQ)
+  - Portfolio optimization suggestions
 
-- 👁️ **Watchlists** - Create and manage custom watchlists
+- 🔔 **Technical Alerts** - Smart price and indicator-based alerts:
+  - Price alerts (above/below thresholds)
+  - RSI overbought/oversold alerts
+  - MACD crossover signals
+  - Moving average crossovers
+  - Volume spike detection
+  - Email and in-app notifications
+
+- 👁️ **Watchlists** - Create and manage custom watchlists with sparklines
 
 - 🤖 **AI Assistant** - AI-powered stock analysis and recommendations
   - Powered by OpenAI GPT
-  - Local LLM support via Ollama
+  - Portfolio insights and optimization
+  - Stock-specific analysis
+
+- 💎 **Subscription Tiers** - Feature gating with three tiers:
+  - **Starter** ($0/month): Basic features, 5 alerts/month
+  - **Professional** ($29/month): Advanced analytics, unlimited alerts
+  - **Enterprise** ($99/month): API access, priority support
 
 ## Tech Stack
 

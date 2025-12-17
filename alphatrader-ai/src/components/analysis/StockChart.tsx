@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo, memo } from "react";
 import { createChart, ColorType, type IChartApi, type Time, CandlestickSeries, LineSeries, AreaSeries, HistogramSeries } from "lightweight-charts";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -46,7 +46,7 @@ type TimeRange = "1M" | "3M" | "6M" | "1Y" | "ALL";
 type IndicatorType = "none" | "sma20" | "sma50" | "sma200" | "ema20" | "ema50" | "bb" | "psar";
 type OscillatorType = "none" | "rsi" | "macd" | "stochastic" | "williams" | "cci";
 
-export function StockChart({ data, symbol, technicalData }: StockChartProps) {
+const StockChartComponent = ({ data, symbol, technicalData }: StockChartProps) => {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const oscillatorContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
@@ -526,21 +526,22 @@ export function StockChart({ data, symbol, technicalData }: StockChartProps) {
   return (
     <div className="space-y-4">
       {/* Chart Controls */}
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <div className="flex gap-2">
+      <div className="flex items-center justify-between flex-wrap gap-2 sm:gap-4">
+        <div className="flex gap-1 sm:gap-2">
           <Button
             variant={chartType === "candlestick" ? "default" : "outline"}
             size="sm"
             onClick={() => setChartType("candlestick")}
-            className={chartType === "candlestick" ? "bg-blue-600" : "border-gray-700 text-gray-400"}
+            className={`text-xs sm:text-sm ${chartType === "candlestick" ? "bg-blue-600" : "border-gray-700 text-gray-400"}`}
           >
-            Candlestick
+            <span className="hidden sm:inline">Candlestick</span>
+            <span className="sm:hidden">Candle</span>
           </Button>
           <Button
             variant={chartType === "line" ? "default" : "outline"}
             size="sm"
             onClick={() => setChartType("line")}
-            className={chartType === "line" ? "bg-blue-600" : "border-gray-700 text-gray-400"}
+            className={`text-xs sm:text-sm ${chartType === "line" ? "bg-blue-600" : "border-gray-700 text-gray-400"}`}
           >
             Line
           </Button>
@@ -548,20 +549,20 @@ export function StockChart({ data, symbol, technicalData }: StockChartProps) {
             variant={chartType === "area" ? "default" : "outline"}
             size="sm"
             onClick={() => setChartType("area")}
-            className={chartType === "area" ? "bg-blue-600" : "border-gray-700 text-gray-400"}
+            className={`text-xs sm:text-sm ${chartType === "area" ? "bg-blue-600" : "border-gray-700 text-gray-400"}`}
           >
             Area
           </Button>
         </div>
 
-        <div className="flex gap-1">
+        <div className="flex gap-0.5 sm:gap-1">
           {(["1M", "3M", "6M", "1Y", "ALL"] as TimeRange[]).map((range) => (
             <Button
               key={range}
               variant={timeRange === range ? "default" : "ghost"}
               size="sm"
               onClick={() => setTimeRange(range)}
-              className={timeRange === range ? "bg-blue-600" : "text-gray-400 hover:text-white"}
+              className={`text-xs sm:text-sm px-2 sm:px-3 ${timeRange === range ? "bg-blue-600" : "text-gray-400 hover:text-white"}`}
             >
               {range}
             </Button>
@@ -570,18 +571,18 @@ export function StockChart({ data, symbol, technicalData }: StockChartProps) {
       </div>
 
       {/* Technical Indicators */}
-      <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-sm text-muted-foreground">Indicators:</span>
+      <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
+        <span className="text-xs sm:text-sm text-muted-foreground">Indicators:</span>
         <Badge
           variant={selectedIndicators.includes("none") ? "default" : "outline"}
-          className="cursor-pointer hover:bg-secondary"
+          className="cursor-pointer hover:bg-secondary text-xs"
           onClick={() => toggleIndicator("none")}
         >
           None
         </Badge>
         <Badge
           variant={selectedIndicators.includes("sma20") ? "default" : "outline"}
-          className="cursor-pointer hover:bg-secondary"
+          className="cursor-pointer hover:bg-secondary text-xs"
           style={{ backgroundColor: selectedIndicators.includes("sma20") ? "#f59e0b" : undefined }}
           onClick={() => toggleIndicator("sma20")}
         >
@@ -589,7 +590,7 @@ export function StockChart({ data, symbol, technicalData }: StockChartProps) {
         </Badge>
         <Badge
           variant={selectedIndicators.includes("sma50") ? "default" : "outline"}
-          className="cursor-pointer hover:bg-secondary"
+          className="cursor-pointer hover:bg-secondary text-xs"
           style={{ backgroundColor: selectedIndicators.includes("sma50") ? "#8b5cf6" : undefined }}
           onClick={() => toggleIndicator("sma50")}
         >
@@ -597,7 +598,7 @@ export function StockChart({ data, symbol, technicalData }: StockChartProps) {
         </Badge>
         <Badge
           variant={selectedIndicators.includes("sma200") ? "default" : "outline"}
-          className="cursor-pointer hover:bg-secondary"
+          className="cursor-pointer hover:bg-secondary text-xs"
           style={{ backgroundColor: selectedIndicators.includes("sma200") ? "#ec4899" : undefined }}
           onClick={() => toggleIndicator("sma200")}
         >
@@ -605,7 +606,7 @@ export function StockChart({ data, symbol, technicalData }: StockChartProps) {
         </Badge>
         <Badge
           variant={selectedIndicators.includes("ema20") ? "default" : "outline"}
-          className="cursor-pointer hover:bg-secondary"
+          className="cursor-pointer hover:bg-secondary text-xs"
           style={{ backgroundColor: selectedIndicators.includes("ema20") ? "#14b8a6" : undefined }}
           onClick={() => toggleIndicator("ema20")}
         >
@@ -613,7 +614,7 @@ export function StockChart({ data, symbol, technicalData }: StockChartProps) {
         </Badge>
         <Badge
           variant={selectedIndicators.includes("ema50") ? "default" : "outline"}
-          className="cursor-pointer hover:bg-secondary"
+          className="cursor-pointer hover:bg-secondary text-xs"
           style={{ backgroundColor: selectedIndicators.includes("ema50") ? "#06b6d4" : undefined }}
           onClick={() => toggleIndicator("ema50")}
         >
@@ -621,35 +622,37 @@ export function StockChart({ data, symbol, technicalData }: StockChartProps) {
         </Badge>
         <Badge
           variant={selectedIndicators.includes("bb") ? "default" : "outline"}
-          className="cursor-pointer hover:bg-secondary"
+          className="cursor-pointer hover:bg-secondary text-xs"
           style={{ backgroundColor: selectedIndicators.includes("bb") ? "#9ca3af" : undefined }}
           onClick={() => toggleIndicator("bb")}
         >
-          Bollinger Bands
+          <span className="hidden sm:inline">Bollinger Bands</span>
+          <span className="sm:hidden">BB</span>
         </Badge>
         <Badge
           variant={selectedIndicators.includes("psar") ? "default" : "outline"}
-          className="cursor-pointer hover:bg-secondary"
+          className="cursor-pointer hover:bg-secondary text-xs"
           style={{ backgroundColor: selectedIndicators.includes("psar") ? "#f97316" : undefined }}
           onClick={() => toggleIndicator("psar")}
         >
-          Parabolic SAR
+          <span className="hidden sm:inline">Parabolic SAR</span>
+          <span className="sm:hidden">PSAR</span>
         </Badge>
       </div>
 
       {/* Oscillator Selection */}
-      <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-sm text-muted-foreground">Oscillators:</span>
+      <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
+        <span className="text-xs sm:text-sm text-muted-foreground">Oscillators:</span>
         <Badge
           variant={selectedOscillator === "none" ? "default" : "outline"}
-          className="cursor-pointer hover:bg-secondary"
+          className="cursor-pointer hover:bg-secondary text-xs"
           onClick={() => setSelectedOscillator("none")}
         >
           None
         </Badge>
         <Badge
           variant={selectedOscillator === "rsi" ? "default" : "outline"}
-          className="cursor-pointer hover:bg-secondary"
+          className="cursor-pointer hover:bg-secondary text-xs"
           style={{ backgroundColor: selectedOscillator === "rsi" ? "#a855f7" : undefined }}
           onClick={() => setSelectedOscillator("rsi")}
         >
@@ -657,7 +660,7 @@ export function StockChart({ data, symbol, technicalData }: StockChartProps) {
         </Badge>
         <Badge
           variant={selectedOscillator === "macd" ? "default" : "outline"}
-          className="cursor-pointer hover:bg-secondary"
+          className="cursor-pointer hover:bg-secondary text-xs"
           style={{ backgroundColor: selectedOscillator === "macd" ? "#3b82f6" : undefined }}
           onClick={() => setSelectedOscillator("macd")}
         >
@@ -665,15 +668,16 @@ export function StockChart({ data, symbol, technicalData }: StockChartProps) {
         </Badge>
         <Badge
           variant={selectedOscillator === "stochastic" ? "default" : "outline"}
-          className="cursor-pointer hover:bg-secondary"
+          className="cursor-pointer hover:bg-secondary text-xs"
           style={{ backgroundColor: selectedOscillator === "stochastic" ? "#f59e0b" : undefined }}
           onClick={() => setSelectedOscillator("stochastic")}
         >
-          Stochastic
+          <span className="hidden sm:inline">Stochastic</span>
+          <span className="sm:hidden">Stoch</span>
         </Badge>
         <Badge
           variant={selectedOscillator === "williams" ? "default" : "outline"}
-          className="cursor-pointer hover:bg-secondary"
+          className="cursor-pointer hover:bg-secondary text-xs"
           style={{ backgroundColor: selectedOscillator === "williams" ? "#06b6d4" : undefined }}
           onClick={() => setSelectedOscillator("williams")}
         >
@@ -681,7 +685,7 @@ export function StockChart({ data, symbol, technicalData }: StockChartProps) {
         </Badge>
         <Badge
           variant={selectedOscillator === "cci" ? "default" : "outline"}
-          className="cursor-pointer hover:bg-secondary"
+          className="cursor-pointer hover:bg-secondary text-xs"
           style={{ backgroundColor: selectedOscillator === "cci" ? "#8b5cf6" : undefined }}
           onClick={() => setSelectedOscillator("cci")}
         >
@@ -700,7 +704,7 @@ export function StockChart({ data, symbol, technicalData }: StockChartProps) {
       )}
     </div>
   );
-}
+};
 
 function filterDataByRange(data: ChartDataPoint[], range: TimeRange): ChartDataPoint[] {
   if (range === "ALL") return data;
@@ -727,3 +731,6 @@ function filterDataByRange(data: ChartDataPoint[], range: TimeRange): ChartDataP
 
   return data.filter((d) => new Date(d.time) >= startDate);
 }
+
+// Export memoized component for performance
+export const StockChart = memo(StockChartComponent);

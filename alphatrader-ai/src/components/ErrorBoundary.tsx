@@ -1,11 +1,13 @@
 'use client';
 
 import React from 'react';
+import { AlertTriangle, RefreshCw } from 'lucide-react';
 import { logger } from '@/lib/logger';
 
 interface ErrorBoundaryProps {
   children: React.ReactNode;
   fallback?: React.ReactNode;
+  onReset?: () => void;
 }
 
 interface ErrorBoundaryState {
@@ -29,6 +31,13 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
     });
   }
 
+  handleReset = () => {
+    this.setState({ hasError: false, error: undefined });
+    if (this.props.onReset) {
+      this.props.onReset();
+    }
+  };
+
   render() {
     if (this.state.hasError) {
       if (this.props.fallback) {
@@ -38,9 +47,14 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
       return (
         <div className="min-h-screen flex items-center justify-center bg-gray-950 p-4">
           <div className="max-w-md w-full bg-gray-900 border border-gray-800 rounded-lg p-6 text-center">
-            <h2 className="text-2xl font-bold text-red-400 mb-4">Something went wrong</h2>
+            <div className="flex justify-center mb-4">
+              <div className="p-3 bg-red-900/20 rounded-full">
+                <AlertTriangle className="h-8 w-8 text-red-500" />
+              </div>
+            </div>
+            <h2 className="text-2xl font-bold text-red-400 mb-2">Something went wrong</h2>
             <p className="text-gray-300 mb-4">
-              We're sorry, but something unexpected happened. Please try refreshing the page.
+              We're sorry, but something unexpected happened. Please try again.
             </p>
             {process.env.NODE_ENV === 'development' && this.state.error && (
               <div className="mt-4 p-4 bg-gray-800 rounded text-left">
@@ -52,12 +66,21 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
                 </pre>
               </div>
             )}
-            <button
-              onClick={() => window.location.reload()}
-              className="mt-6 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-            >
-              Refresh Page
-            </button>
+            <div className="flex gap-2 justify-center mt-6">
+              <button
+                onClick={this.handleReset}
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors flex items-center gap-2"
+              >
+                <RefreshCw className="h-4 w-4" />
+                Try Again
+              </button>
+              <button
+                onClick={() => window.location.reload()}
+                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
+              >
+                Refresh Page
+              </button>
+            </div>
           </div>
         </div>
       );
