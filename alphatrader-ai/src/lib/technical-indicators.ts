@@ -336,6 +336,226 @@ export function calculateATR(
   return result;
 }
 
+/**
+ * ADX - Trend strength indicator
+ * Measures the strength of a trend (not direction)
+ */
+export function calculateADX(
+  data: ChartDataPoint[],
+  period: number = 14
+): Array<{ time: Time; value: number }> {
+  const result: Array<{ time: Time; value: number }> = [];
+
+  if (data.length < period * 2) return result;
+
+  const plusDM: number[] = [];
+  const minusDM: number[] = [];
+  const trueRanges: number[] = [];
+
+  // Calculate directional movements and true ranges
+  for (let i = 1; i < data.length; i++) {
+    const highDiff = data[i].high - data[i - 1].high;
+    const lowDiff = data[i - 1].low - data[i].low;
+
+    plusDM.push(highDiff > lowDiff && highDiff > 0 ? highDiff : 0);
+    minusDM.push(lowDiff > highDiff && lowDiff > 0 ? lowDiff : 0);
+
+    const tr = Math.max(
+      data[i].high - data[i].low,
+      Math.abs(data[i].high - data[i - 1].close),
+      Math.abs(data[i].low - data[i - 1].close)
+    );
+    trueRanges.push(tr);
+  }
+
+  if (trueRanges.length < period) return result;
+
+  // Calculate smoothed +DM, -DM, and TR
+  let smoothedPlusDM = plusDM.slice(0, period).reduce((sum, val) => sum + val, 0);
+  let smoothedMinusDM = minusDM.slice(0, period).reduce((sum, val) => sum + val, 0);
+  let smoothedTR = trueRanges.slice(0, period).reduce((sum, val) => sum + val, 0);
+
+  const plusDI: number[] = [];
+  const minusDI: number[] = [];
+
+  for (let i = period; i < trueRanges.length; i++) {
+    smoothedPlusDM = smoothedPlusDM - (smoothedPlusDM / period) + plusDM[i];
+    smoothedMinusDM = smoothedMinusDM - (smoothedMinusDM / period) + minusDM[i];
+    smoothedTR = smoothedTR - (smoothedTR / period) + trueRanges[i];
+
+    plusDI.push((smoothedPlusDM / smoothedTR) * 100);
+    minusDI.push((smoothedMinusDM / smoothedTR) * 100);
+  }
+
+  if (plusDI.length < period) return result;
+
+  // Calculate DX values
+  const dx: number[] = [];
+  for (let i = 0; i < plusDI.length; i++) {
+    const diDiff = Math.abs(plusDI[i] - minusDI[i]);
+    const diSum = plusDI[i] + minusDI[i];
+    dx.push(diSum === 0 ? 0 : (diDiff / diSum) * 100);
+  }
+
+  // Calculate ADX (smoothed DX)
+  let adx = dx.slice(0, period).reduce((sum, val) => sum + val, 0) / period;
+  result.push({
+    time: data[period * 2].time as Time,
+    value: adx,
+  });
+
+  for (let i = period; i < dx.length; i++) {
+    adx = ((adx * (period - 1)) + dx[i]) / period;
+    result.push({
+      time: data[i + period + 1].time as Time,
+      value: adx,
+    });
+  }
+
+  return result;
+}
+
+/**
+ * Williams %R - Momentum oscillator
+ * Similar to Stochastic but measures overbought/oversold on a scale of -100 to 0
+ */
+export function calculateWilliamsR(
+  data: ChartDataPoint[],
+  period: number = 14
+): Array<{ time: Time; value: number }> {
+  const result: Array<{ time: Time; value: number }> = [];
+
+  if (data.length < period) return result;
+
+  for (let i = period - 1; i < data.length; i++) {
+    const slice = data.slice(i - period + 1, i + 1);
+    const highestHigh = Math.max(...slice.map((d) => d.high));
+    const lowestLow = Math.min(...slice.map((d) => d.low));
+    const close = data[i].close;
+
+    const williamsR = highestHigh !== lowestLow
+      ? ((highestHigh - close) / (highestHigh - lowestLow)) * -100
+      : -50;
+
+    result.push({
+      time: data[i].time as Time,
+      value: williamsR,
+    });
+  }
+
+  return result;
+}
+
+/**
+ * CCI - Commodity Channel Index
+ * Identifies cyclical trends and overbought/oversold conditions
+ */
+export function calculateCCI(
+  data: ChartDataPoint[],
+  period: number = 20
+): Array<{ time: Time; value: number }> {
+  const result: Array<{ time: Time; value: number }> = [];
+
+  if (data.length < period) return result;
+
+  for (let i = period - 1; i < data.length; i++) {
+    const slice = data.slice(i - period + 1, i + 1);
+
+    // Calculate Typical Price
+    const typicalPrices = slice.map((d) => (d.high + d.low + d.close) / 3);
+
+    // Calculate SMA of Typical Price
+    const smaTP = typicalPrices.reduce((sum, tp) => sum + tp, 0) / period;
+
+    // Calculate Mean Deviation
+    const meanDeviation = typicalPrices.reduce((sum, tp) => sum + Math.abs(tp - smaTP), 0) / period;
+
+    // Calculate CCI
+    const currentTP = typicalPrices[typicalPrices.length - 1];
+    const cci = meanDeviation !== 0 ? (currentTP - smaTP) / (0.015 * meanDeviation) : 0;
+
+    result.push({
+      time: data[i].time as Time,
+      value: cci,
+    });
+  }
+
+  return result;
+}
+
+/**
+ * Parabolic SAR - Stop and Reverse
+ * Determines potential reversal points in price direction
+ */
+export function calculateParabolicSAR(
+  data: ChartDataPoint[],
+  accelerationFactor: number = 0.02,
+  maxAcceleration: number = 0.2
+): Array<{ time: Time; value: number }> {
+  const result: Array<{ time: Time; value: number }> = [];
+
+  if (data.length < 2) return result;
+
+  let isUptrend = data[1].close > data[0].close;
+  let sar = isUptrend ? data[0].low : data[0].high;
+  let ep = isUptrend ? data[0].high : data[0].low;
+  let af = accelerationFactor;
+
+  result.push({
+    time: data[0].time as Time,
+    value: sar,
+  });
+
+  for (let i = 1; i < data.length; i++) {
+    const current = data[i];
+
+    // Calculate new SAR
+    sar = sar + af * (ep - sar);
+
+    // Check for trend reversal
+    let reversed = false;
+    if (isUptrend) {
+      if (current.low < sar) {
+        isUptrend = false;
+        reversed = true;
+        sar = ep;
+        ep = current.low;
+        af = accelerationFactor;
+      }
+    } else {
+      if (current.high > sar) {
+        isUptrend = true;
+        reversed = true;
+        sar = ep;
+        ep = current.high;
+        af = accelerationFactor;
+      }
+    }
+
+    // Update EP and AF if not reversed
+    if (!reversed) {
+      if (isUptrend) {
+        if (current.high > ep) {
+          ep = current.high;
+          af = Math.min(af + accelerationFactor, maxAcceleration);
+        }
+      } else {
+        if (current.low < ep) {
+          ep = current.low;
+          af = Math.min(af + accelerationFactor, maxAcceleration);
+        }
+      }
+    }
+
+    result.push({
+      time: current.time as Time,
+      value: sar,
+    });
+  }
+
+  return result;
+}
+
 // ============================================================================
 // VOLUME INDICATORS
 // ============================================================================

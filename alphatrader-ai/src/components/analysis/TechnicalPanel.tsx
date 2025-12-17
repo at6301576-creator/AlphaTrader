@@ -207,6 +207,75 @@ export function TechnicalPanel({ technicals }: TechnicalPanelProps) {
         </CardContent>
       </Card>
 
+      {/* ATR - Volatility */}
+      <Card className="bg-gray-900 border-gray-800 hover:border-gray-700 hover:shadow-lg transition-all duration-300 group">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium text-gray-400 group-hover:text-gray-300 flex items-center gap-2 transition-colors">
+            <Activity className="h-4 w-4 group-hover:scale-110 transition-transform" />
+            Average True Range (ATR)
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {technicals.atr !== null ? (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-2xl font-bold text-white">${technicals.atr.toFixed(2)}</span>
+                <ATRSignal value={technicals.atr} currentPrice={technicals.bollingerBands?.middle || 0} />
+              </div>
+              <div className="text-xs text-gray-500">
+                Measures market volatility - higher values indicate more volatile price movements
+              </div>
+            </div>
+          ) : (
+            <div className="text-gray-500">Insufficient data</div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* ADX - Trend Strength */}
+      <Card className="bg-gray-900 border-gray-800 hover:border-gray-700 hover:shadow-lg transition-all duration-300 group">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium text-gray-400 group-hover:text-gray-300 flex items-center gap-2 transition-colors">
+            <TrendingUp className="h-4 w-4 group-hover:scale-110 transition-transform" />
+            ADX - Trend Strength
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {technicals.adx !== null ? (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-2xl font-bold text-white">{technicals.adx.toFixed(1)}</span>
+                <ADXSignal value={technicals.adx} />
+              </div>
+              <div className="space-y-2">
+                <Progress
+                  value={Math.min(technicals.adx, 100)}
+                  className="h-2"
+                  style={{
+                    background: `linear-gradient(to right,
+                      rgba(107, 114, 128, 0.3) 0%,
+                      rgba(107, 114, 128, 0.3) 25%,
+                      rgba(234, 179, 8, 0.3) 25%,
+                      rgba(234, 179, 8, 0.3) 50%,
+                      rgba(34, 197, 94, 0.3) 50%,
+                      rgba(34, 197, 94, 0.3) 100%
+                    )`,
+                  }}
+                />
+                <div className="flex justify-between text-xs text-gray-500">
+                  <span>Weak</span>
+                  <span>25</span>
+                  <span>50</span>
+                  <span>Strong</span>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="text-gray-500">Insufficient data</div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Overall Signal Summary */}
       <Card className="bg-gray-900 border-gray-800 hover:border-emerald-700/50 hover:shadow-lg hover:shadow-emerald-900/20 transition-all duration-300 md:col-span-2 lg:col-span-3 group">
         <CardHeader className="pb-2">
@@ -301,6 +370,44 @@ function getTrendColor(trend: string): string {
   if (trend === "bullish") return "text-green-500";
   if (trend === "bearish") return "text-red-500";
   return "text-yellow-500";
+}
+
+function ATRSignal({ value, currentPrice }: { value: number; currentPrice: number }) {
+  if (currentPrice === 0) {
+    return <span className="text-xs font-medium px-2 py-1 rounded bg-gray-900/50 text-gray-400">N/A</span>;
+  }
+
+  const percentOfPrice = (value / currentPrice) * 100;
+
+  if (percentOfPrice > 5) {
+    return (
+      <span className="text-xs font-medium px-2 py-1 rounded bg-red-900/50 text-red-400">High Volatility</span>
+    );
+  }
+  if (percentOfPrice > 2) {
+    return (
+      <span className="text-xs font-medium px-2 py-1 rounded bg-yellow-900/50 text-yellow-400">Moderate</span>
+    );
+  }
+  return (
+    <span className="text-xs font-medium px-2 py-1 rounded bg-green-900/50 text-green-400">Low Volatility</span>
+  );
+}
+
+function ADXSignal({ value }: { value: number }) {
+  if (value >= 50) {
+    return (
+      <span className="text-xs font-medium px-2 py-1 rounded bg-green-900/50 text-green-400">Very Strong</span>
+    );
+  }
+  if (value >= 25) {
+    return (
+      <span className="text-xs font-medium px-2 py-1 rounded bg-yellow-900/50 text-yellow-400">Strong Trend</span>
+    );
+  }
+  return (
+    <span className="text-xs font-medium px-2 py-1 rounded bg-gray-900/50 text-gray-400">Weak Trend</span>
+  );
 }
 
 function formatLargeNumber(value: number): string {

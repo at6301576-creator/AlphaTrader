@@ -19,6 +19,9 @@ import {
   calculateRSI,
   calculateMACD,
   calculateStochastic,
+  calculateParabolicSAR,
+  calculateWilliamsR,
+  calculateCCI,
 } from "@/lib/technical-indicators";
 
 interface StockChartProps {
@@ -40,8 +43,8 @@ interface StockChartProps {
 
 type ChartType = "candlestick" | "line" | "area";
 type TimeRange = "1M" | "3M" | "6M" | "1Y" | "ALL";
-type IndicatorType = "none" | "sma20" | "sma50" | "sma200" | "ema20" | "ema50" | "bb";
-type OscillatorType = "none" | "rsi" | "macd" | "stochastic";
+type IndicatorType = "none" | "sma20" | "sma50" | "sma200" | "ema20" | "ema50" | "bb" | "psar";
+type OscillatorType = "none" | "rsi" | "macd" | "stochastic" | "williams" | "cci";
 
 export function StockChart({ data, symbol, technicalData }: StockChartProps) {
   const chartContainerRef = useRef<HTMLDivElement>(null);
@@ -218,6 +221,17 @@ export function StockChart({ data, symbol, technicalData }: StockChartProps) {
         upperSeries.setData(bbData.upper);
         middleSeries.setData(bbData.middle);
         lowerSeries.setData(bbData.lower);
+      }
+
+      if (indicator === "psar") {
+        const psarData = calculateParabolicSAR(filteredData);
+        const psarSeries = chart.addSeries(LineSeries, {
+          color: "#f97316",
+          lineWidth: 1,
+          lineStyle: 3, // Dotted line
+          title: "Parabolic SAR",
+        });
+        psarSeries.setData(psarData);
       }
     });
 
@@ -404,6 +418,72 @@ export function StockChart({ data, symbol, technicalData }: StockChartProps) {
       oversoldLine.setData(refData20);
     }
 
+    if (selectedOscillator === "williams") {
+      const williamsData = calculateWilliamsR(filteredData, 14);
+      const williamsSeries = oscillatorChart.addSeries(LineSeries, {
+        color: "#06b6d4",
+        lineWidth: 2,
+        title: "Williams %R(14)",
+      });
+      williamsSeries.setData(williamsData);
+
+      // Add reference lines for overbought (-20) and oversold (-80)
+      const overboughtLine = oscillatorChart.addSeries(LineSeries, {
+        color: "#ef4444",
+        lineWidth: 1,
+        lineStyle: 2,
+        title: "Overbought (-20)",
+      });
+      const oversoldLine = oscillatorChart.addSeries(LineSeries, {
+        color: "#10b981",
+        lineWidth: 1,
+        lineStyle: 2,
+        title: "Oversold (-80)",
+      });
+
+      const refDataMinus20 = williamsData.map(d => ({ time: d.time, value: -20 }));
+      const refDataMinus80 = williamsData.map(d => ({ time: d.time, value: -80 }));
+      overboughtLine.setData(refDataMinus20);
+      oversoldLine.setData(refDataMinus80);
+    }
+
+    if (selectedOscillator === "cci") {
+      const cciData = calculateCCI(filteredData, 20);
+      const cciSeries = oscillatorChart.addSeries(LineSeries, {
+        color: "#8b5cf6",
+        lineWidth: 2,
+        title: "CCI(20)",
+      });
+      cciSeries.setData(cciData);
+
+      // Add reference lines for overbought (+100) and oversold (-100)
+      const overboughtLine = oscillatorChart.addSeries(LineSeries, {
+        color: "#ef4444",
+        lineWidth: 1,
+        lineStyle: 2,
+        title: "Overbought (+100)",
+      });
+      const oversoldLine = oscillatorChart.addSeries(LineSeries, {
+        color: "#10b981",
+        lineWidth: 1,
+        lineStyle: 2,
+        title: "Oversold (-100)",
+      });
+      const zeroLine = oscillatorChart.addSeries(LineSeries, {
+        color: "#6b7280",
+        lineWidth: 1,
+        lineStyle: 2,
+        title: "Zero",
+      });
+
+      const refData100 = cciData.map(d => ({ time: d.time, value: 100 }));
+      const refDataMinus100 = cciData.map(d => ({ time: d.time, value: -100 }));
+      const refData0 = cciData.map(d => ({ time: d.time, value: 0 }));
+      overboughtLine.setData(refData100);
+      oversoldLine.setData(refDataMinus100);
+      zeroLine.setData(refData0);
+    }
+
     // Fit content
     oscillatorChart.timeScale().fitContent();
 
@@ -547,6 +627,14 @@ export function StockChart({ data, symbol, technicalData }: StockChartProps) {
         >
           Bollinger Bands
         </Badge>
+        <Badge
+          variant={selectedIndicators.includes("psar") ? "default" : "outline"}
+          className="cursor-pointer hover:bg-secondary"
+          style={{ backgroundColor: selectedIndicators.includes("psar") ? "#f97316" : undefined }}
+          onClick={() => toggleIndicator("psar")}
+        >
+          Parabolic SAR
+        </Badge>
       </div>
 
       {/* Oscillator Selection */}
@@ -582,6 +670,22 @@ export function StockChart({ data, symbol, technicalData }: StockChartProps) {
           onClick={() => setSelectedOscillator("stochastic")}
         >
           Stochastic
+        </Badge>
+        <Badge
+          variant={selectedOscillator === "williams" ? "default" : "outline"}
+          className="cursor-pointer hover:bg-secondary"
+          style={{ backgroundColor: selectedOscillator === "williams" ? "#06b6d4" : undefined }}
+          onClick={() => setSelectedOscillator("williams")}
+        >
+          Williams %R
+        </Badge>
+        <Badge
+          variant={selectedOscillator === "cci" ? "default" : "outline"}
+          className="cursor-pointer hover:bg-secondary"
+          style={{ backgroundColor: selectedOscillator === "cci" ? "#8b5cf6" : undefined }}
+          onClick={() => setSelectedOscillator("cci")}
+        >
+          CCI
         </Badge>
       </div>
 

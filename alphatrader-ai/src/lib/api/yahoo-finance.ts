@@ -557,6 +557,12 @@ export function calculateTechnicalIndicators(data: ChartDataPoint[]): TechnicalI
   // Calculate Bollinger Bands
   const bollingerBands = calculateBollingerBands(closes, 20);
 
+  // Calculate ATR
+  const atr = calculateATR(data, 14);
+
+  // Calculate ADX
+  const adx = calculateADX(data, 14);
+
   // Determine overall signal
   const currentPrice = closes[closes.length - 1];
   let signalScore = 0;
@@ -587,13 +593,13 @@ export function calculateTechnicalIndicators(data: ChartDataPoint[]): TechnicalI
     macd,
     stochastic: null,
     williamsR: null,
-    atr: null,
+    atr,
     bollingerBands,
     keltnerChannels: null,
     obv: calculateOBV(closes, volumes),
     vwap: null,
     volumeProfile: null,
-    adx: null,
+    adx,
     parabolicSar: null,
     ichimoku: null,
     supportLevels: calculateSupportResistance(data).support,
@@ -761,4 +767,97 @@ function calculateSupportResistance(data: ChartDataPoint[]): { support: number[]
     support: [...new Set(support)].sort((a, b) => b - a).slice(0, 5),
     resistance: [...new Set(resistance)].sort((a, b) => a - b).slice(0, 5),
   };
+}
+
+function calculateATR(data: ChartDataPoint[], period: number = 14): number | null {
+  if (data.length < period + 1) return null;
+
+  const trueRanges: number[] = [];
+
+  for (let i = 1; i < data.length; i++) {
+    const high = data[i].high;
+    const low = data[i].low;
+    const prevClose = data[i - 1].close;
+
+    const tr = Math.max(
+      high - low,
+      Math.abs(high - prevClose),
+      Math.abs(low - prevClose)
+    );
+
+    trueRanges.push(tr);
+  }
+
+  // Calculate ATR using smoothed average (Wilder's smoothing)
+  if (trueRanges.length < period) return null;
+
+  let atr = trueRanges.slice(0, period).reduce((sum, tr) => sum + tr, 0) / period;
+
+  for (let i = period; i < trueRanges.length; i++) {
+    atr = ((atr * (period - 1)) + trueRanges[i]) / period;
+  }
+
+  return atr;
+}
+
+function calculateADX(data: ChartDataPoint[], period: number = 14): number | null {
+  if (data.length < period * 2) return null;
+
+  const plusDM: number[] = [];
+  const minusDM: number[] = [];
+  const trueRanges: number[] = [];
+
+  // Calculate directional movements and true ranges
+  for (let i = 1; i < data.length; i++) {
+    const highDiff = data[i].high - data[i - 1].high;
+    const lowDiff = data[i - 1].low - data[i].low;
+
+    plusDM.push(highDiff > lowDiff && highDiff > 0 ? highDiff : 0);
+    minusDM.push(lowDiff > highDiff && lowDiff > 0 ? lowDiff : 0);
+
+    const tr = Math.max(
+      data[i].high - data[i].low,
+      Math.abs(data[i].high - data[i - 1].close),
+      Math.abs(data[i].low - data[i - 1].close)
+    );
+    trueRanges.push(tr);
+  }
+
+  if (trueRanges.length < period) return null;
+
+  // Calculate smoothed +DM, -DM, and TR
+  let smoothedPlusDM = plusDM.slice(0, period).reduce((sum, val) => sum + val, 0);
+  let smoothedMinusDM = minusDM.slice(0, period).reduce((sum, val) => sum + val, 0);
+  let smoothedTR = trueRanges.slice(0, period).reduce((sum, val) => sum + val, 0);
+
+  const plusDI: number[] = [];
+  const minusDI: number[] = [];
+
+  for (let i = period; i < trueRanges.length; i++) {
+    smoothedPlusDM = smoothedPlusDM - (smoothedPlusDM / period) + plusDM[i];
+    smoothedMinusDM = smoothedMinusDM - (smoothedMinusDM / period) + minusDM[i];
+    smoothedTR = smoothedTR - (smoothedTR / period) + trueRanges[i];
+
+    plusDI.push((smoothedPlusDM / smoothedTR) * 100);
+    minusDI.push((smoothedMinusDM / smoothedTR) * 100);
+  }
+
+  if (plusDI.length < period) return null;
+
+  // Calculate DX values
+  const dx: number[] = [];
+  for (let i = 0; i < plusDI.length; i++) {
+    const diDiff = Math.abs(plusDI[i] - minusDI[i]);
+    const diSum = plusDI[i] + minusDI[i];
+    dx.push(diSum === 0 ? 0 : (diDiff / diSum) * 100);
+  }
+
+  // Calculate ADX (smoothed DX)
+  let adx = dx.slice(0, period).reduce((sum, val) => sum + val, 0) / period;
+
+  for (let i = period; i < dx.length; i++) {
+    adx = ((adx * (period - 1)) + dx[i]) / period;
+  }
+
+  return adx;
 }
