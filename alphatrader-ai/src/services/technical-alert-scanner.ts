@@ -50,7 +50,7 @@ async function fetchChartData(symbol: string): Promise<ChartDataPoint[]> {
       period1: startDate,
       period2: endDate,
       interval: "1d",
-    });
+    }) as any;
 
     if (!result.quotes || result.quotes.length === 0) {
       return [];

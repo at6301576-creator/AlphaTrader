@@ -19,9 +19,9 @@ export interface SentimentAnalysis {
   keyPoints: string[];
 }
 
-export interface NewsWithSentiment extends NewsItem {
-  sentiment?: Sentiment;
-  sentimentScore?: number;
+export interface NewsWithSentiment extends Omit<NewsItem, 'sentiment' | 'sentimentScore'> {
+  sentiment?: Sentiment | "positive" | "negative" | "neutral" | null;
+  sentimentScore?: number | null;
   sentimentConfidence?: number;
   sentimentReasoning?: string;
 }
@@ -46,7 +46,7 @@ export async function analyzeNewsSentiment(
   try {
     const prompt = `Analyze the following stock news article and determine its sentiment (bullish, bearish, or neutral).
 
-Title: ${newsItem.headline}
+Title: ${newsItem.title}
 Summary: ${newsItem.summary || "No summary available"}
 Source: ${newsItem.source}
 
@@ -271,14 +271,14 @@ export async function cacheSentimentAnalysis(
       create: {
         id: newsItem.id,
         symbol: newsItem.symbol,
-        title: newsItem.headline,
+        title: newsItem.title,
         summary: newsItem.summary || "",
         source: newsItem.source,
         url: newsItem.url,
-        imageUrl: newsItem.image || undefined,
+        imageUrl: newsItem.imageUrl || undefined,
         sentiment: analysis.sentiment,
         sentimentScore: analysis.score,
-        publishedAt: new Date(newsItem.datetime * 1000),
+        publishedAt: newsItem.publishedAt,
       },
       update: {
         sentiment: analysis.sentiment,
@@ -315,12 +315,12 @@ export async function getCachedSentiment(
     return cachedNews.map((news) => ({
       id: news.id,
       symbol: news.symbol,
-      headline: news.title,
-      summary: news.summary || undefined,
-      source: news.source || "",
-      url: news.url || "",
-      image: news.imageUrl || undefined,
-      datetime: Math.floor(news.publishedAt.getTime() / 1000),
+      title: news.title,
+      summary: news.summary || null,
+      source: news.source || null,
+      url: news.url || null,
+      imageUrl: news.imageUrl || null,
+      publishedAt: news.publishedAt,
       sentiment: news.sentiment as Sentiment | undefined,
       sentimentScore: news.sentimentScore || undefined,
       sentimentConfidence: undefined, // Not stored in cache currently

@@ -19,6 +19,7 @@ import {
 import { DashboardClient } from "@/components/dashboard/DashboardClient";
 import { getQuotes } from "@/lib/api/stock-data";
 import { MarketStatus } from "@/components/MarketStatus";
+import { MarketMoversCard } from "@/components/dashboard/MarketMoversCard";
 
 async function getDashboardData(userId: string) {
   // Return empty data structure if no userId
@@ -175,12 +176,10 @@ async function getDashboardData(userId: string) {
     let marketMovers: any[] = [];
 
     try {
-      // Popular US stocks to check for market movers
+      // Popular US stocks to check for market movers (reduced to 10 for fast loading)
       const popularSymbols = [
-        'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'TSLA', 'META', 'BRK.B',
-        'JPM', 'V', 'WMT', 'JNJ', 'PG', 'MA', 'HD', 'CVX', 'LLY', 'ABBV',
-        'MRK', 'KO', 'PEP', 'COST', 'AVGO', 'TMO', 'MCD', 'NFLX', 'ADBE',
-        'CSCO', 'ACN', 'TXN', 'AMD', 'INTC', 'QCOM', 'HON', 'UPS', 'SBUX'
+        'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA',
+        'TSLA', 'META', 'JPM', 'V', 'WMT'
       ];
 
       const marketQuotes = await getQuotes(popularSymbols);
@@ -450,72 +449,18 @@ export default async function DashboardPage() {
 
       {/* Main content grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Market Movers */}
-        <Card className="lg:col-span-2 bg-card border-border hover:border-border/70 transition-all duration-300 animate-in fade-in slide-in-from-left-4" style={{ animationDelay: '600ms', animationFillMode: 'backwards' }}>
-          <CardHeader>
-            <CardTitle>Market Movers</CardTitle>
-            <CardDescription>Top gainers and losers</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Top Gainers */}
-              <div>
-                <h3 className="text-sm font-semibold text-emerald-500 mb-3 flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4" />
-                  Top Gainers
-                </h3>
-                <div className="space-y-2">
-                  {market.topGainers.length > 0 ? (
-                    market.topGainers.map((stock: any) => (
-                      <Link key={stock.symbol} href={`/stock/${stock.symbol}`}>
-                        <div className="flex items-center justify-between p-2 rounded-lg bg-secondary/50 hover:bg-secondary transition-all duration-300 cursor-pointer group">
-                          <div>
-                            <p className="font-medium text-sm group-hover:text-emerald-400 transition-colors">{stock.symbol}</p>
-                            <p className="text-xs text-muted-foreground">{stock.name}</p>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-sm font-medium text-emerald-500">+{stock.changePercent.toFixed(2)}%</p>
-                            <p className="text-xs text-muted-foreground">${stock.currentPrice.toFixed(2)}</p>
-                          </div>
-                        </div>
-                      </Link>
-                    ))
-                  ) : (
-                    <p className="text-sm text-muted-foreground">No data available</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Top Losers */}
-              <div>
-                <h3 className="text-sm font-semibold text-red-500 mb-3 flex items-center gap-2">
-                  <TrendingDown className="h-4 w-4" />
-                  Top Losers
-                </h3>
-                <div className="space-y-2">
-                  {market.topLosers.length > 0 ? (
-                    market.topLosers.map((stock: any) => (
-                      <Link key={stock.symbol} href={`/stock/${stock.symbol}`}>
-                        <div className="flex items-center justify-between p-2 rounded-lg bg-secondary/50 hover:bg-secondary transition-all duration-300 cursor-pointer group">
-                          <div>
-                            <p className="font-medium text-sm group-hover:text-red-400 transition-colors">{stock.symbol}</p>
-                            <p className="text-xs text-muted-foreground">{stock.name}</p>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-sm font-medium text-red-500">{stock.changePercent.toFixed(2)}%</p>
-                            <p className="text-xs text-muted-foreground">${stock.currentPrice.toFixed(2)}</p>
-                          </div>
-                        </div>
-                      </Link>
-                    ))
-                  ) : (
-                    <p className="text-sm text-muted-foreground">No data available</p>
-                  )}
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Market Movers with Lazy Loading */}
+        <div className="lg:col-span-2 animate-in fade-in slide-in-from-left-4" style={{ animationDelay: '600ms', animationFillMode: 'backwards' }}>
+          <MarketMoversCard
+            initialStocks={market.movers.map((stock: any) => ({
+              symbol: stock.symbol,
+              price: stock.currentPrice,
+              change: stock.change,
+              changePercent: stock.changePercent
+            }))}
+            initialHasMore={true}
+          />
+        </div>
 
         {/* Quick actions */}
         <Card className="bg-card border-border hover:border-border transition-all duration-300 animate-in fade-in slide-in-from-right-4" style={{ animationDelay: '600ms', animationFillMode: 'backwards' }}>

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { createAlertSchema, updateAlertSchema, safeValidate } from "@/lib/validation";
 
 // GET /api/alerts - Get user's alerts
 export async function GET() {
@@ -66,40 +67,31 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const {
-      symbol,
-      companyName,
-      alertType,
-      condition,
-      threshold,
-      percentValue,
-      message,
-      notifyEmail,
-      notifyInApp,
-      repeatAlert
-    } = body;
 
-    // Validate required fields
-    if (!symbol || !alertType || !condition) {
+    // Validate input
+    const validation = safeValidate(createAlertSchema, body);
+    if (!validation.success) {
       return NextResponse.json(
-        { error: "Missing required fields" },
+        { error: "error" in validation ? validation.error : "Invalid input" },
         { status: 400 }
       );
     }
 
+    const alertData = validation.data;
+
     const alert = await prisma.alert.create({
       data: {
         userId: session.user.id,
-        symbol: symbol.toUpperCase(),
-        companyName,
-        alertType,
-        condition,
-        threshold: threshold ? parseFloat(threshold) : null,
-        percentValue: percentValue ? parseFloat(percentValue) : null,
-        message,
-        notifyEmail: notifyEmail ?? false,
-        notifyInApp: notifyInApp ?? true,
-        repeatAlert: repeatAlert ?? false,
+        symbol: alertData.symbol, // Already uppercased by schema
+        companyName: alertData.companyName,
+        alertType: alertData.alertType,
+        condition: alertData.condition,
+        threshold: alertData.threshold,
+        percentValue: alertData.percentValue,
+        message: alertData.message,
+        notifyEmail: alertData.notifyEmail,
+        notifyInApp: alertData.notifyInApp,
+        repeatAlert: alertData.repeatAlert,
         isActive: true,
       },
     });
@@ -161,21 +153,22 @@ export async function PATCH(req: Request) {
     }
 
     const body = await req.json();
-    const {
-      id,
-      isActive,
-      triggeredAt,
-      threshold,
-      percentValue,
-      message,
-      notifyEmail,
-      notifyInApp,
-      repeatAlert
-    } = body;
+    const id = body.id;
 
-    if (!id) {
+    if (!id || typeof id !== "string") {
       return NextResponse.json({ error: "Alert ID required" }, { status: 400 });
     }
+
+    // Validate update data
+    const validation = safeValidate(updateAlertSchema, body);
+    if (!validation.success) {
+      return NextResponse.json(
+        { error: "error" in validation ? validation.error : "Invalid input" },
+        { status: 400 }
+      );
+    }
+
+    const updateData = validation.data;
 
     // Verify the alert belongs to the user
     const alert = await prisma.alert.findFirst({
@@ -191,16 +184,7 @@ export async function PATCH(req: Request) {
 
     const updated = await prisma.alert.update({
       where: { id },
-      data: {
-        ...(isActive !== undefined && { isActive }),
-        ...(triggeredAt !== undefined && { triggeredAt: new Date() }),
-        ...(threshold !== undefined && { threshold: parseFloat(threshold) }),
-        ...(percentValue !== undefined && { percentValue: parseFloat(percentValue) }),
-        ...(message !== undefined && { message }),
-        ...(notifyEmail !== undefined && { notifyEmail }),
-        ...(notifyInApp !== undefined && { notifyInApp }),
-        ...(repeatAlert !== undefined && { repeatAlert }),
-      },
+      data: updateData,
     });
 
     return NextResponse.json({ success: true, alert: updated });

@@ -252,7 +252,7 @@ export function NewsSentimentCard({ symbol, days = 7 }: NewsSentimentCardProps) 
                         rel="noopener noreferrer"
                         className="text-sm font-medium text-gray-200 hover:text-blue-400 transition-colors line-clamp-2 flex-1"
                       >
-                        {article.headline}
+                        {article.title}
                       </a>
                       <ExternalLink className="h-3 w-3 text-gray-500 flex-shrink-0 mt-0.5" />
                     </div>
@@ -265,7 +265,7 @@ export function NewsSentimentCard({ symbol, days = 7 }: NewsSentimentCardProps) 
                       <span>{article.source}</span>
                       <span>•</span>
                       <span>
-                        {new Date(article.datetime * 1000).toLocaleDateString()}
+                        {new Date(article.publishedAt).toLocaleDateString()}
                       </span>
                     </div>
                   </div>

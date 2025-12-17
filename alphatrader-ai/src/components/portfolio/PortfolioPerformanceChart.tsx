@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { createChart, ColorType, IChartApi, ISeriesApi } from "lightweight-charts";
+import { createChart, ColorType, AreaSeries, LineSeries, type IChartApi, type ISeriesApi } from "lightweight-charts";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingUp, TrendingDown } from "lucide-react";
 
@@ -72,7 +72,7 @@ export function PortfolioPerformanceChart({
     chartRef.current = chart;
 
     // Value area series (portfolio value)
-    const valueSeries = chart.addAreaSeries({
+    const valueSeries = chart.addSeries(AreaSeries, {
       lineColor: totalGainLoss >= 0 ? "#10b981" : "#ef4444",
       topColor: totalGainLoss >= 0 ? "rgba(16, 185, 129, 0.3)" : "rgba(239, 68, 68, 0.3)",
       bottomColor: "rgba(16, 185, 129, 0)",
@@ -87,7 +87,7 @@ export function PortfolioPerformanceChart({
     valueSeriesRef.current = valueSeries;
 
     // Cost basis line
-    const costSeries = chart.addLineSeries({
+    const costSeries = chart.addSeries(LineSeries, {
       color: "#6b7280",
       lineWidth: 1,
       lineStyle: 2, // Dashed

@@ -15,6 +15,8 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
+  ComposedChart,
+  Bar,
 } from "recharts";
 import { TrendingUp, TrendingDown, Activity, PieChart as PieChartIcon, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";

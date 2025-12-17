@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { scanTechnicalAlerts } from "@/services/technical-alert-scanner";
 // import { sendPushNotification } from "@/lib/push-notifications"; // TODO: Implement push notifications
 import { prisma } from "@/lib/db";
+import { validateCronAuth, createSecureErrorResponse, createSecureResponse } from "@/lib/security";
 
 /**
  * GET /api/cron/technical-alerts
@@ -9,14 +10,12 @@ import { prisma } from "@/lib/db";
  * This should be called hourly by a cron service (e.g., Vercel Cron, GitHub Actions)
  */
 export async function GET(request: NextRequest) {
-  try {
-    // Optional: Add authentication for cron jobs
-    const authHeader = request.headers.get("authorization");
-    const cronSecret = process.env.CRON_SECRET;
+  // Validate cron authentication
+  if (!validateCronAuth(request)) {
+    return createSecureErrorResponse("Unauthorized", 401);
+  }
 
-    if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+  try {
 
     console.log("[Cron] Starting technical alert scan...");
 
@@ -70,7 +69,7 @@ export async function GET(request: NextRequest) {
 
     console.log(`[Cron] Technical alert scan complete. Notifications sent: ${notificationsSent}`);
 
-    return NextResponse.json({
+    return createSecureResponse({
       success: true,
       scanned: result.scanned,
       triggered: result.triggered,
@@ -79,9 +78,9 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error("[Cron] Error in technical alerts cron job:", error);
-    return NextResponse.json(
-      { error: "Failed to run technical alerts scan" },
-      { status: 500 }
+    return createSecureErrorResponse(
+      "Failed to run technical alerts scan",
+      500
     );
   }
 }

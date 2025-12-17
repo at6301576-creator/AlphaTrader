@@ -41,12 +41,12 @@ export async function getBenchmarkQuote(symbol: string): Promise<BenchmarkData |
     // Use yahoo-finance2 library
     const yahooFinance = (await import("yahoo-finance2")).default;
 
-    const quote = await yahooFinance.quote(symbol);
+    const quote = await yahooFinance.quote(symbol) as any;
 
     console.log(`[getBenchmarkQuote] Yahoo Finance data for ${symbol}:`, {
-      price: quote.regularMarketPrice,
-      change: quote.regularMarketChange,
-      changePercent: quote.regularMarketChangePercent,
+      price: quote?.regularMarketPrice,
+      change: quote?.regularMarketChange,
+      changePercent: quote?.regularMarketChangePercent,
     });
 
     if (!quote || !quote.regularMarketPrice) {
@@ -57,9 +57,9 @@ export async function getBenchmarkQuote(symbol: string): Promise<BenchmarkData |
     const data: BenchmarkData = {
       symbol: symbol,
       name: BENCHMARKS[Object.keys(BENCHMARKS).find(key => BENCHMARKS[key as keyof typeof BENCHMARKS].symbol === symbol) as keyof typeof BENCHMARKS]?.name || symbol,
-      price: quote.regularMarketPrice,
-      change: quote.regularMarketChange || 0,
-      changePercent: quote.regularMarketChangePercent || 0,
+      price: quote.regularMarketPrice as number,
+      change: (quote.regularMarketChange as number) || 0,
+      changePercent: (quote.regularMarketChangePercent as number) || 0,
       historicalData: [],
     };
 
@@ -132,7 +132,7 @@ export async function getBenchmarkHistory(
       interval: "1d" as const,
     };
 
-    const result = await yahooFinance.historical(symbol, queryOptions);
+    const result = await yahooFinance.historical(symbol, queryOptions) as any[];
 
     if (!result || result.length === 0) {
       console.warn(`No historical data available for ${symbol}`);
@@ -141,7 +141,7 @@ export async function getBenchmarkHistory(
 
     console.log(`[getBenchmarkHistory] Fetched ${result.length} data points for ${symbol}`);
 
-    return result.map((item) => ({
+    return result.map((item: any) => ({
       date: item.date.toISOString().split("T")[0],
       close: item.close || 0,
     }));

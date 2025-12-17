@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { withRateLimit } from "@/lib/rate-limit";
+import { screenerRequestSchema, safeValidate } from "@/lib/validation";
 
 interface ScreenerFilters {
   // Price & Market Cap
@@ -69,10 +70,17 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const filters: ScreenerFilters = body.filters || {};
-    const limit = body.limit || 100;
-    const sortBy = body.sortBy || "marketCap";
-    const sortOrder = body.sortOrder || "desc";
+
+    // Validate input
+    const validation = safeValidate(screenerRequestSchema, body);
+    if (!validation.success) {
+      return NextResponse.json(
+        { error: "error" in validation ? validation.error : "Invalid input" },
+        { status: 400 }
+      );
+    }
+
+    const { filters, limit, sortBy, sortOrder } = validation.data;
 
     // Build Prisma where clause
     const where: any = {

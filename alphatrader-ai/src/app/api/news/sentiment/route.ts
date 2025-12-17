@@ -83,8 +83,11 @@ export async function GET(request: NextRequest) {
     await Promise.all(
       newsWithSentiment.map((newsItem) => {
         if (newsItem.sentiment && newsItem.sentimentScore !== undefined) {
+          // Convert sentiment to Sentiment type
+          const sentiment = newsItem.sentiment === "positive" ? "bullish" :
+                          newsItem.sentiment === "negative" ? "bearish" : "neutral";
           return cacheSentimentAnalysis(newsItem as any, {
-            sentiment: newsItem.sentiment,
+            sentiment: sentiment as any,
             score: newsItem.sentimentScore,
             confidence: newsItem.sentimentConfidence || 0.5,
             reasoning: newsItem.sentimentReasoning || "",

@@ -1,14 +1,28 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { scanMarket } from "@/services/market-scanner";
 import type { ScannerFilters } from "@/types/scanner";
+import { createSecureErrorResponse, createSecureResponse, rateLimit } from "@/lib/security";
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return createSecureErrorResponse("Unauthorized", 401);
+    }
+
+    // Rate limiting: 10 scans per hour per user
+    const rateLimitResult = rateLimit(`scanner:${session.user.id}`, {
+      interval: 60 * 60 * 1000, // 1 hour
+      maxRequests: 10,
+    });
+
+    if (!rateLimitResult.success) {
+      return createSecureErrorResponse(
+        "Too many scan requests. Please try again later.",
+        429
+      );
     }
 
     const filters: ScannerFilters = await request.json();
@@ -37,15 +51,15 @@ export async function POST(request: Request) {
       },
     });
 
-    return NextResponse.json({
+    return createSecureResponse({
       results,
       totalCount: results.length,
     });
   } catch (error) {
     console.error("❌ Scanner error:", error);
-    return NextResponse.json(
-      { error: "An error occurred during scanning" },
-      { status: 500 }
+    return createSecureErrorResponse(
+      "An error occurred during scanning",
+      500
     );
   }
 }
@@ -54,7 +68,7 @@ export async function GET() {
   try {
     const session = await auth();
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return createSecureErrorResponse("Unauthorized", 401);
     }
 
     // Get recent scan history
@@ -64,12 +78,12 @@ export async function GET() {
       take: 10,
     });
 
-    return NextResponse.json({ history });
+    return createSecureResponse({ history });
   } catch (error) {
     console.error("Error fetching scan history:", error);
-    return NextResponse.json(
-      { error: "An error occurred" },
-      { status: 500 }
+    return createSecureErrorResponse(
+      "An error occurred",
+      500
     );
   }
 }

@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getQuotes, type QuoteResult } from "@/lib/api/yahoo-finance";
 import { withRateLimit } from "@/lib/rate-limit";
+import { addPortfolioSchema, safeValidate } from "@/lib/validation";
 
 export async function GET() {
   const session = await auth();
@@ -168,16 +169,18 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { symbol, shares, avgCost, purchaseDate } = body;
 
-    if (!symbol || !shares || !avgCost) {
+    // Validate input
+    const validation = safeValidate(addPortfolioSchema, body);
+    if (!validation.success) {
       return NextResponse.json(
-        { error: "Symbol, shares, and average cost are required" },
+        { error: "error" in validation ? validation.error : "Invalid input" },
         { status: 400 }
       );
     }
 
-    const symbolUpper = symbol.toUpperCase();
+    const { symbol, shares, avgCost, purchaseDate, companyName } = validation.data;
+    const symbolUpper = symbol; // Already uppercased by schema
 
     // Check if holding already exists
     const existing = await prisma.portfolio.findFirst({
@@ -205,6 +208,7 @@ export async function POST(request: NextRequest) {
         data: {
           userId: session.user.id,
           symbol: symbolUpper,
+          companyName,
           shares,
           avgCost,
           purchaseDate: purchaseDate ? new Date(purchaseDate) : null,

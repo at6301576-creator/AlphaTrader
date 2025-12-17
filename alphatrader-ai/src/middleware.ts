@@ -74,16 +74,23 @@ export function middleware(request: NextRequest) {
     'camera=(), microphone=(), geolocation=()'
   );
 
-  // Content Security Policy (adjust based on your needs)
+  // Content Security Policy - Strict policy for production security
   if (process.env.NODE_ENV === 'production') {
+    // Generate a nonce for inline scripts (Next.js handles this automatically)
+    const nonce = Buffer.from(crypto.randomUUID()).toString('base64');
+
     response.headers.set(
       'Content-Security-Policy',
       "default-src 'self'; " +
-      "script-src 'self' 'unsafe-eval' 'unsafe-inline'; " +
-      "style-src 'self' 'unsafe-inline'; " +
-      "img-src 'self' data: https:; " +
-      "font-src 'self' data:; " +
-      "connect-src 'self' https://api.finnhub.io https://www.alphavantage.co https://api.openai.com"
+      `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'; ` +
+      "style-src 'self' https://fonts.googleapis.com; " +
+      "img-src 'self' data: https: blob:; " +
+      "font-src 'self' data: https://fonts.gstatic.com; " +
+      "connect-src 'self' https://api.finnhub.io https://www.alphavantage.co https://api.openai.com https://*.vercel-insights.com; " +
+      "frame-ancestors 'none'; " +
+      "base-uri 'self'; " +
+      "form-action 'self'; " +
+      "upgrade-insecure-requests;"
     );
   }
 

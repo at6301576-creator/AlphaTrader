@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getQuotes } from "@/lib/api/stock-data";
+import { validateCronAuth, createSecureErrorResponse, createSecureResponse } from "@/lib/security";
 
 /**
  * Cron job to create daily portfolio snapshots for all users
@@ -15,13 +16,12 @@ import { getQuotes } from "@/lib/api/stock-data";
  * }
  */
 export async function GET(request: NextRequest) {
+  // Validate cron authentication (works in all environments)
+  if (!validateCronAuth(request)) {
+    return createSecureErrorResponse("Unauthorized", 401);
+  }
+
   try {
-    // Verify this is a legitimate cron request
-    // In production, add authorization header check
-    const authHeader = request.headers.get("authorization");
-    if (process.env.NODE_ENV === "production" && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
 
     console.log("📸 Starting daily portfolio snapshot job...");
 
@@ -142,16 +142,16 @@ export async function GET(request: NextRequest) {
 
     console.log(`📸 Snapshot job completed: ${successCount} success, ${errorCount} errors`);
 
-    return NextResponse.json({
+    return createSecureResponse({
       success: true,
       message: `Created ${successCount} snapshots`,
       errors: errorCount,
     });
   } catch (error) {
     console.error("❌ Snapshot cron job error:", error);
-    return NextResponse.json(
-      { error: "Snapshot job failed", details: error instanceof Error ? error.message : "Unknown error" },
-      { status: 500 }
+    return createSecureErrorResponse(
+      error instanceof Error ? error.message : "Snapshot job failed",
+      500
     );
   }
 }
