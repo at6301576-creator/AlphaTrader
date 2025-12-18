@@ -48,9 +48,10 @@ interface SidebarProps {
     name?: string | null;
     email?: string | null;
   };
+  onClose?: () => void;
 }
 
-export function Sidebar({ user }: SidebarProps) {
+export function Sidebar({ user, onClose }: SidebarProps) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const [unreadAlerts, setUnreadAlerts] = useState(0);
@@ -118,7 +119,7 @@ export function Sidebar({ user }: SidebarProps) {
         {/* Main navigation */}
         <div className="px-3 space-y-1">
           {mainNavItems.map((item) => (
-            <Link key={item.href} href={item.href}>
+            <Link key={item.href} href={item.href} onClick={onClose}>
               <Button
                 variant="ghost"
                 className={cn(
@@ -141,7 +142,7 @@ export function Sidebar({ user }: SidebarProps) {
           {secondaryNavItems.map((item) => {
             const badge = item.title === "Alerts" ? unreadAlerts : item.badge;
             return (
-              <Link key={item.href} href={item.href}>
+              <Link key={item.href} href={item.href} onClick={onClose}>
                 <Button
                   variant="ghost"
                   className={cn(

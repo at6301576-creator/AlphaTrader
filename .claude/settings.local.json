@@ -45,7 +45,12 @@
       "Bash(more:*)",
       "Bash(if exist .nextcache rmdir /s /q .nextcache)",
       "Bash(timeout 180 npm run build)",
-      "Bash(timeout:*)"
+      "Bash(timeout:*)",
+      "Bash(git push:*)",
+      "Bash(vercel --version:*)",
+      "Bash(vercel whoami:*)",
+      "Bash(vercel link:*)",
+      "Bash(vercel:*)"
     ],
     "deny": [],
     "ask": []
