@@ -1,13 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { SubscriptionTier } from '@/lib/subscription';
+import { auth } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
   try {
-    // TODO: Replace with your actual auth implementation
-    // For now, we'll use a mock user ID
-    // In production, get this from your auth session (e.g., NextAuth, Clerk, etc.)
-    const userId = 'mock-user-id';
+    // Get authenticated user from NextAuth
+    const session = await auth();
+
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    const userId = session.user.id;
 
     // Fetch user's subscription
     let subscription = await prisma.subscription.findUnique({
@@ -64,8 +72,17 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    // TODO: Replace with your actual auth implementation
-    const userId = 'mock-user-id';
+    // Get authenticated user from NextAuth
+    const session = await auth();
+
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    const userId = session.user.id;
 
     const body = await request.json();
     const { tier } = body;
