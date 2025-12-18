@@ -343,10 +343,16 @@ export function calculateATR(
 export function calculateADX(
   data: ChartDataPoint[],
   period: number = 14
-): Array<{ time: Time; value: number }> {
-  const result: Array<{ time: Time; value: number }> = [];
+): {
+  adx: Array<{ time: Time; value: number }>;
+  plusDI: Array<{ time: Time; value: number }>;
+  minusDI: Array<{ time: Time; value: number }>;
+} {
+  const adx: Array<{ time: Time; value: number }> = [];
+  const plusDIResult: Array<{ time: Time; value: number }> = [];
+  const minusDIResult: Array<{ time: Time; value: number }> = [];
 
-  if (data.length < period * 2) return result;
+  if (data.length < period * 2) return { adx, plusDI: plusDIResult, minusDI: minusDIResult };
 
   const plusDM: number[] = [];
   const minusDM: number[] = [];
@@ -368,7 +374,7 @@ export function calculateADX(
     trueRanges.push(tr);
   }
 
-  if (trueRanges.length < period) return result;
+  if (trueRanges.length < period) return { adx, plusDI: plusDIResult, minusDI: minusDIResult };
 
   // Calculate smoothed +DM, -DM, and TR
   let smoothedPlusDM = plusDM.slice(0, period).reduce((sum, val) => sum + val, 0);
@@ -383,11 +389,23 @@ export function calculateADX(
     smoothedMinusDM = smoothedMinusDM - (smoothedMinusDM / period) + minusDM[i];
     smoothedTR = smoothedTR - (smoothedTR / period) + trueRanges[i];
 
-    plusDI.push((smoothedPlusDM / smoothedTR) * 100);
-    minusDI.push((smoothedMinusDM / smoothedTR) * 100);
+    const plusDIValue = (smoothedPlusDM / smoothedTR) * 100;
+    const minusDIValue = (smoothedMinusDM / smoothedTR) * 100;
+
+    plusDI.push(plusDIValue);
+    minusDI.push(minusDIValue);
+
+    plusDIResult.push({
+      time: data[i + 1].time as Time,
+      value: plusDIValue,
+    });
+    minusDIResult.push({
+      time: data[i + 1].time as Time,
+      value: minusDIValue,
+    });
   }
 
-  if (plusDI.length < period) return result;
+  if (plusDI.length < period) return { adx, plusDI: plusDIResult, minusDI: minusDIResult };
 
   // Calculate DX values
   const dx: number[] = [];
@@ -398,21 +416,21 @@ export function calculateADX(
   }
 
   // Calculate ADX (smoothed DX)
-  let adx = dx.slice(0, period).reduce((sum, val) => sum + val, 0) / period;
-  result.push({
+  let adxValue = dx.slice(0, period).reduce((sum, val) => sum + val, 0) / period;
+  adx.push({
     time: data[period * 2].time as Time,
-    value: adx,
+    value: adxValue,
   });
 
   for (let i = period; i < dx.length; i++) {
-    adx = ((adx * (period - 1)) + dx[i]) / period;
-    result.push({
+    adxValue = ((adxValue * (period - 1)) + dx[i]) / period;
+    adx.push({
       time: data[i + period + 1].time as Time,
-      value: adx,
+      value: adxValue,
     });
   }
 
-  return result;
+  return { adx, plusDI: plusDIResult, minusDI: minusDIResult };
 }
 
 /**
@@ -491,8 +509,8 @@ export function calculateParabolicSAR(
   data: ChartDataPoint[],
   accelerationFactor: number = 0.02,
   maxAcceleration: number = 0.2
-): Array<{ time: Time; value: number }> {
-  const result: Array<{ time: Time; value: number }> = [];
+): Array<{ time: Time; value: number; trend: 'up' | 'down' }> {
+  const result: Array<{ time: Time; value: number; trend: 'up' | 'down' }> = [];
 
   if (data.length < 2) return result;
 
@@ -504,6 +522,7 @@ export function calculateParabolicSAR(
   result.push({
     time: data[0].time as Time,
     value: sar,
+    trend: isUptrend ? 'up' : 'down',
   });
 
   for (let i = 1; i < data.length; i++) {
@@ -550,6 +569,7 @@ export function calculateParabolicSAR(
     result.push({
       time: current.time as Time,
       value: sar,
+      trend: isUptrend ? 'up' : 'down',
     });
   }
 
@@ -721,4 +741,126 @@ export function detectStochasticSignal(
   }
 
   return { type: "neutral", kValue: currentK, dValue: currentD };
+}
+
+/**
+ * Detect ADX signals
+ */
+export interface ADXSignal {
+  type: 'strong_trend' | 'weak_trend' | 'no_trend';
+  value: number;
+  trendDirection?: 'bullish' | 'bearish' | 'neutral';
+}
+
+export function detectADXSignal(adxValue: number, plusDI: number, minusDI: number): ADXSignal {
+  // Determine trend direction
+  let trendDirection: 'bullish' | 'bearish' | 'neutral' = 'neutral';
+  if (plusDI > minusDI) {
+    trendDirection = 'bullish';
+  } else if (minusDI > plusDI) {
+    trendDirection = 'bearish';
+  }
+
+  // Determine trend strength
+  if (adxValue > 25) {
+    return { type: 'strong_trend', value: adxValue, trendDirection };
+  } else if (adxValue >= 20) {
+    return { type: 'weak_trend', value: adxValue, trendDirection };
+  } else {
+    return { type: 'no_trend', value: adxValue, trendDirection };
+  }
+}
+
+/**
+ * Detect CCI signals
+ */
+export interface CCISignal {
+  type: 'overbought' | 'oversold' | 'neutral';
+  value: number;
+}
+
+export function detectCCISignal(cciValue: number): CCISignal {
+  if (cciValue > 100) {
+    return { type: 'overbought', value: cciValue };
+  } else if (cciValue < -100) {
+    return { type: 'oversold', value: cciValue };
+  } else {
+    return { type: 'neutral', value: cciValue };
+  }
+}
+
+/**
+ * Detect Williams %R signals
+ */
+export interface WilliamsRSignal {
+  type: 'overbought' | 'oversold' | 'neutral';
+  value: number;
+}
+
+export function detectWilliamsRSignal(williamsRValue: number): WilliamsRSignal {
+  if (williamsRValue > -20) {
+    return { type: 'overbought', value: williamsRValue };
+  } else if (williamsRValue < -80) {
+    return { type: 'oversold', value: williamsRValue };
+  } else {
+    return { type: 'neutral', value: williamsRValue };
+  }
+}
+
+/**
+ * Calculate On-Balance Volume (OBV)
+ */
+export function calculateOBV(data: ChartDataPoint[]): Array<{ time: Time; value: number }> {
+  const result: Array<{ time: Time; value: number }> = [];
+  let obv = 0;
+
+  for (let i = 0; i < data.length; i++) {
+    if (i === 0) {
+      obv = data[i].volume || 0;
+    } else {
+      const currentClose = data[i].close;
+      const previousClose = data[i - 1].close;
+      const volume = data[i].volume || 0;
+
+      if (currentClose > previousClose) {
+        obv += volume;
+      } else if (currentClose < previousClose) {
+        obv -= volume;
+      }
+      // If equal, OBV stays the same
+    }
+
+    result.push({
+      time: data[i].time,
+      value: obv,
+    });
+  }
+
+  return result;
+}
+
+/**
+ * Calculate Volume Weighted Average Price (VWAP)
+ */
+export function calculateVWAP(data: ChartDataPoint[]): Array<{ time: Time; value: number }> {
+  const result: Array<{ time: Time; value: number }> = [];
+  let cumulativeTPV = 0; // Cumulative Typical Price * Volume
+  let cumulativeVolume = 0;
+
+  for (const point of data) {
+    const typicalPrice = (point.high + point.low + point.close) / 3;
+    const volume = point.volume || 0;
+
+    cumulativeTPV += typicalPrice * volume;
+    cumulativeVolume += volume;
+
+    const vwap = cumulativeVolume > 0 ? cumulativeTPV / cumulativeVolume : typicalPrice;
+
+    result.push({
+      time: point.time,
+      value: vwap,
+    });
+  }
+
+  return result;
 }
