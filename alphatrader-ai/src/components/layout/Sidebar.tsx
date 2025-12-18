@@ -135,7 +135,7 @@ export function Sidebar({ user, onClose }: SidebarProps) {
           ))}
         </div>
 
-        <Separator className="my-4 bg-sidebar-border" />
+        <Separator className="my-4 bg-gray-800/50" />
 
         {/* Secondary navigation */}
         <div className="px-3 space-y-1">
