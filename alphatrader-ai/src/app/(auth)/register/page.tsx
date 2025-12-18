@@ -50,9 +50,22 @@ export default function RegisterPage() {
         setError(data.error || "Registration failed");
       } else {
         setSuccess(true);
-        setTimeout(() => {
-          router.push("/login");
-        }, 2000);
+        // Automatically log in the user after registration
+        setTimeout(async () => {
+          const { signIn } = await import("next-auth/react");
+          const result = await signIn("credentials", {
+            email,
+            password,
+            redirect: false,
+          });
+
+          if (result?.ok) {
+            router.push("/dashboard");
+            router.refresh();
+          } else {
+            router.push("/login");
+          }
+        }, 1500);
       }
     } catch {
       setError("An error occurred. Please try again.");
