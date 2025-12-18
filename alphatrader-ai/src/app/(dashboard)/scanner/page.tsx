@@ -185,6 +185,19 @@ export default function ScannerPage() {
       {/* Results Section */}
       {!isLoading && results.length > 0 && (
         <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
+          {/* Success Banner */}
+          <Alert className="bg-emerald-900/30 border-emerald-700 border-2">
+            <TrendingUp className="h-5 w-5 text-emerald-400" />
+            <AlertDescription className="text-emerald-50 text-base">
+              <strong className="text-emerald-300">✓ Scan Complete!</strong> Found <strong>{results.length} stocks</strong> matching your criteria.
+              {filteredResults.length < results.length && (
+                <span className="ml-1 text-amber-300">
+                  (Showing {filteredResults.length} after applying filters - adjust filters below to see all results)
+                </span>
+              )}
+            </AlertDescription>
+          </Alert>
+
           {/* Results Header */}
           <Card className="bg-card border-border">
             <CardHeader>
@@ -289,11 +302,22 @@ export default function ScannerPage() {
           </div>
 
           {filteredResults.length === 0 && (
-            <Card className="bg-card border-border p-8 text-center">
-              <p className="text-muted-foreground">
-                No stocks match your current filters.
-              </p>
-            </Card>
+            <Alert className="bg-amber-900/30 border-amber-700 border-2">
+              <AlertCircle className="h-5 w-5 text-amber-400" />
+              <AlertDescription className="text-amber-50">
+                <strong className="text-amber-300">No stocks match your current filters</strong>
+                <div className="mt-2 text-sm">
+                  Your scan found {results.length} stocks, but they were filtered out. Try:
+                  <ul className="list-disc list-inside mt-1 space-y-1">
+                    {filterShariah !== "all" && (
+                      <li>Change "Shariah Filter" to "All Stocks"</li>
+                    )}
+                    <li>Adjust your scan criteria in the controls above</li>
+                    <li>Try a different scan type (Momentum, Growth, Dividend)</li>
+                  </ul>
+                </div>
+              </AlertDescription>
+            </Alert>
           )}
         </div>
       )}
