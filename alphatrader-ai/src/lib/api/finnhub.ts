@@ -2,41 +2,64 @@
  * Finnhub API Integration
  * Legal for commercial redistribution
  * Free tier: 60 API calls/minute
+ * Premium: 300-600 calls/minute (5-10x faster scanning!)
  * Docs: https://finnhub.io/docs/api
  */
 
 import type { Stock, ChartDataPoint, NewsItem } from "@/types/stock";
 import { mapIndustryToSector } from "@/lib/sector-mapping";
 import { requestDeduplicator, generateRequestKey } from "@/lib/request-deduplication";
+import { getCached as getRedisCache, setCache as setRedisCache, CACHE_KEYS, CACHE_TTL } from "@/lib/redis";
 
 const FINNHUB_API_KEY = process.env.NEXT_PUBLIC_FINNHUB_API_KEY || process.env.FINNHUB_API_KEY;
 const FINNHUB_BASE_URL = "https://finnhub.io/api/v1";
 
-// ============= RATE LIMITING & CACHING =============
+// ============= REDIS CACHING (PRODUCTION-READY) =============
+// Dual-layer cache: In-memory (fast) + Redis (persistent, shared across instances)
 
 interface CacheEntry {
   data: any;
   timestamp: number;
 }
 
-const cache = new Map<string, CacheEntry>();
-const CACHE_TTL = 30 * 60 * 1000; // 30 minutes (optimized for scanner performance)
+// In-memory cache as L1 (super fast, process-local)
+const memoryCache = new Map<string, CacheEntry>();
+const MEMORY_CACHE_TTL = 5 * 60 * 1000; // 5 minutes in memory
 
-function getCached(key: string): any | null {
-  const entry = cache.get(key);
-  if (!entry) return null;
-
-  const age = Date.now() - entry.timestamp;
-  if (age > CACHE_TTL) {
-    cache.delete(key);
-    return null;
+// Hybrid cache getter: Check memory first, then Redis
+async function getCached(key: string): Promise<any | null> {
+  // L1: Check in-memory cache first (instant)
+  const memEntry = memoryCache.get(key);
+  if (memEntry) {
+    const age = Date.now() - memEntry.timestamp;
+    if (age < MEMORY_CACHE_TTL) {
+      return memEntry.data;
+    }
+    memoryCache.delete(key);
   }
 
-  return entry.data;
+  // L2: Check Redis (persistent, shared)
+  const redisKey = CACHE_KEYS.stockQuote(key);
+  const redisData = await getRedisCache<any>(redisKey);
+  if (redisData) {
+    // Warm up memory cache
+    memoryCache.set(key, { data: redisData, timestamp: Date.now() });
+    return redisData;
+  }
+
+  return null;
 }
 
-function setCache(key: string, data: any): void {
-  cache.set(key, { data, timestamp: Date.now() });
+// Hybrid cache setter: Write to both memory and Redis
+async function setCache(key: string, data: any): Promise<void> {
+  // L1: Write to memory cache
+  memoryCache.set(key, { data, timestamp: Date.now() });
+
+  // L2: Write to Redis (async, non-blocking)
+  const redisKey = CACHE_KEYS.stockQuote(key);
+  setRedisCache(redisKey, data, CACHE_TTL.STOCK_QUOTE).catch(err =>
+    console.error('[Cache] Redis write failed:', err)
+  );
 }
 
 // Rate limiting - 60 calls per minute for free tier
@@ -476,10 +499,15 @@ export async function getQuotes(symbols: string[]): Promise<Array<Partial<Stock>
   let errors = 0;
   let timeouts = 0;
 
-  // Check cache first
+  // Check cache first (async Redis + memory cache)
   const uncachedSymbols: string[] = [];
-  for (const symbol of symbols) {
-    const cached = getCached(`stock:${symbol}`);
+  const cachePromises = symbols.map(async (symbol) => {
+    const cached = await getCached(`stock:${symbol}`);
+    return { symbol, cached };
+  });
+
+  const cacheResults = await Promise.all(cachePromises);
+  for (const { symbol, cached } of cacheResults) {
     if (cached) {
       stocks.push(cached);
       cacheHits++;

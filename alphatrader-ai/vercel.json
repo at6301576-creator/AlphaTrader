@@ -2,5 +2,27 @@
   "buildCommand": "npm run build",
   "devCommand": "npm run dev",
   "installCommand": "npm install",
-  "framework": "nextjs"
+  "framework": "nextjs",
+  "crons": [
+    {
+      "path": "/api/cron/warm-cache",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/check-alerts",
+      "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/cron/technical-alerts",
+      "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/cron/snapshot",
+      "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/cron/cleanup",
+      "schedule": "0 2 * * *"
+    }
+  ]
 }
