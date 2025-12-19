@@ -53,13 +53,13 @@ export const technicalAlertSchema = z
       .max(10, "Symbol must be 10 characters or less")
       .regex(/^[A-Z]+$/, "Symbol must contain only uppercase letters"),
     indicatorType: z.enum(technicalAlertIndicatorTypes, {
-      errorMap: () => ({ message: "Invalid indicator type" }),
+      message: "Invalid indicator type",
     }),
     condition: z.enum(["above", "below", "crosses_above", "crosses_below"], {
-      errorMap: () => ({ message: "Invalid condition" }),
+      message: "Invalid condition",
     }),
     targetValue: z.number(),
-    parameters: z.record(z.any()).optional().default({}),
+    parameters: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])).optional().default({}),
     notificationEmail: z.string().email("Invalid email address").optional(),
   })
   .refine(
@@ -67,7 +67,7 @@ export const technicalAlertSchema = z
       // Validate RSI-specific parameters
       if (data.indicatorType === "rsi") {
         const period = data.parameters?.period;
-        if (!period || period < 2 || period > 100) {
+        if (!period || typeof period !== 'number' || period < 2 || period > 100) {
           return false;
         }
       }
@@ -83,7 +83,7 @@ export const technicalAlertSchema = z
       // Validate SMA/EMA-specific parameters
       if (data.indicatorType === "sma" || data.indicatorType === "ema") {
         const period = data.parameters?.period;
-        if (!period || period < 2 || period > 200) {
+        if (!period || typeof period !== 'number' || period < 2 || period > 200) {
           return false;
         }
       }
@@ -103,6 +103,8 @@ export const technicalAlertSchema = z
           !fastPeriod ||
           !slowPeriod ||
           !signalPeriod ||
+          typeof fastPeriod !== 'number' ||
+          typeof slowPeriod !== 'number' ||
           fastPeriod >= slowPeriod
         ) {
           return false;
@@ -178,7 +180,7 @@ export async function validateRequest<T extends z.ZodType>(
       throw new Error(
         JSON.stringify({
           message: "Validation failed",
-          issues: error.errors,
+          issues: error.issues,
         })
       );
     }
@@ -193,12 +195,12 @@ export function validateQueryParams<T extends z.ZodType>(
   searchParams: URLSearchParams,
   schema: T
 ): z.infer<T> {
-  const params = Object.fromEntries(searchParams.entries());
+  const params: Record<string, string | number | boolean> = Object.fromEntries(searchParams.entries());
 
   // Convert numeric strings to numbers
   Object.keys(params).forEach((key) => {
     const value = params[key];
-    if (!isNaN(Number(value))) {
+    if (typeof value === 'string' && !isNaN(Number(value))) {
       params[key] = Number(value);
     }
     // Convert "true"/"false" strings to booleans
@@ -213,7 +215,7 @@ export function validateQueryParams<T extends z.ZodType>(
       throw new Error(
         JSON.stringify({
           message: "Invalid query parameters",
-          issues: error.errors,
+          issues: error.issues,
         })
       );
     }

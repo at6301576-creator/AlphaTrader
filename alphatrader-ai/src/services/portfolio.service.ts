@@ -236,34 +236,15 @@ class PortfolioService {
       throw new Error("Cannot sell more shares than owned");
     }
 
-    // Calculate gain/loss
-    const costBasis = soldShares * holding.avgCost;
-    const proceeds = soldShares * input.soldPrice;
-    const gainLoss = proceeds - costBasis;
-    const gainLossPercent = (gainLoss / costBasis) * 100;
-
-    // Create transaction record
-    await prisma.transaction.create({
-      data: {
-        userId,
-        portfolioId: holdingId,
-        type: "SELL",
-        symbol: holding.symbol,
-        companyName: holding.companyName,
-        shares: soldShares,
-        price: input.soldPrice,
-        costBasis,
-        gainLoss,
-        gainLossPercent,
-        transactionDate: input.soldDate,
-      },
-    });
-
     // Update or delete holding
     if (soldShares >= holding.shares) {
-      // Sold all shares - delete holding
-      await prisma.portfolio.delete({
+      // Sold all shares - mark as sold in portfolio record
+      await prisma.portfolio.update({
         where: { id: holdingId, userId },
+        data: {
+          soldPrice: input.soldPrice,
+          soldDate: input.soldDate,
+        },
       });
     } else {
       // Sold partial - update holding
