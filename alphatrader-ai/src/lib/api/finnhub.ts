@@ -207,7 +207,7 @@ interface FinnhubNews {
 export async function getQuote(symbol: string): Promise<FinnhubQuote | null> {
   try {
     const cacheKey = `quote:${symbol}`;
-    const cached = getCached(cacheKey);
+    const cached = await getCached(cacheKey);
     if (cached) {
       console.log(`[Finnhub] Quote cache hit for ${symbol}`);
       return cached;
@@ -219,7 +219,7 @@ export async function getQuote(symbol: string): Promise<FinnhubQuote | null> {
 
     // Only cache if we got valid data
     if (quote.c && quote.c > 0) {
-      setCache(cacheKey, quote);
+      void setCache(cacheKey, quote);
       console.log(`[Finnhub] Quote cached for ${symbol}: $${quote.c}`);
       return quote;
     }
@@ -238,7 +238,7 @@ export async function getQuote(symbol: string): Promise<FinnhubQuote | null> {
 export async function getProfile(symbol: string): Promise<FinnhubProfile | null> {
   try {
     const cacheKey = `profile:${symbol}`;
-    const cached = getCached(cacheKey);
+    const cached = await getCached(cacheKey);
     if (cached) {
       console.log(`[Finnhub] Profile cache hit for ${symbol}`);
       return cached;
@@ -250,7 +250,7 @@ export async function getProfile(symbol: string): Promise<FinnhubProfile | null>
 
     // Only cache if we got valid data
     if (profile && profile.ticker) {
-      setCache(cacheKey, profile);
+      void setCache(cacheKey, profile);
       console.log(`[Finnhub] Profile cached for ${symbol}: ${profile.name}`);
       return profile;
     }
@@ -269,7 +269,7 @@ export async function getProfile(symbol: string): Promise<FinnhubProfile | null>
 export async function getMetrics(symbol: string): Promise<FinnhubMetric | null> {
   try {
     const cacheKey = `metrics:${symbol}`;
-    const cached = getCached(cacheKey);
+    const cached = await getCached(cacheKey);
     if (cached) {
       console.log(`[Finnhub] Metrics cache hit for ${symbol}`);
       return cached;
@@ -279,7 +279,7 @@ export async function getMetrics(symbol: string): Promise<FinnhubMetric | null> 
     console.log(`[Finnhub] Fetching metrics for ${symbol}`);
     const metrics = await rateLimitedFetch<FinnhubMetric>(url);
 
-    setCache(cacheKey, metrics);
+    void setCache(cacheKey, metrics);
     console.log(`[Finnhub] Metrics cached for ${symbol}`);
     return metrics;
   } catch (error) {
@@ -305,7 +305,7 @@ export async function getCompanyNews(
     const fromDate = from || new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
     const cacheKey = `news:${symbol}:${fromDate}:${toDate}`;
-    const cached = getCached(cacheKey);
+    const cached = await getCached(cacheKey);
     if (cached) {
       console.log(`[Finnhub] News cache hit for ${symbol} (${cached.length} items)`);
       return cached;
@@ -329,7 +329,7 @@ export async function getCompanyNews(
       publishedAt: new Date(item.datetime * 1000),
     }));
 
-    setCache(cacheKey, newsItems);
+    void setCache(cacheKey, newsItems);
     console.log(`[Finnhub] News cached for ${symbol}: ${newsItems.length} items`);
     return newsItems;
   } catch (error) {
@@ -364,7 +364,7 @@ export async function getAllUSStocks(): Promise<string[]> {
     console.log('  📡 Fetching US stock symbols from Finnhub...');
 
     const cacheKey = 'all-us-stocks';
-    const cached = getCached(cacheKey);
+    const cached = await getCached(cacheKey);
     if (cached) {
       console.log(`  💾 Using ${cached.length} cached US stocks`);
       return cached;
@@ -405,7 +405,7 @@ export async function getAllUSStocks(): Promise<string[]> {
       .sort((a, b) => a.length - b.length);
 
     console.log(`  ✅ Fetched ${usStocks.length} US stock symbols from Finnhub`);
-    setCache(cacheKey, usStocks);
+    void setCache(cacheKey, usStocks);
     return usStocks;
   } catch (error) {
     console.error('Error fetching US stocks:', error);
@@ -537,7 +537,7 @@ export async function getQuotes(symbols: string[]): Promise<Array<Partial<Stock>
       ]);
 
       if (stock) {
-        setCache(`stock:${symbol}`, stock);
+        void setCache(`stock:${symbol}`, stock);
         return { success: true, stock };
       } else {
         return { success: false, skipped: true };
