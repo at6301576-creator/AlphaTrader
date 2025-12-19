@@ -1,0 +1,6 @@
+{
+  "version": 2,
+  "buildCommand": "cd alphatrader-ai && npm install && npm run build",
+  "installCommand": "cd alphatrader-ai && npm install",
+  "framework": "nextjs"
+}
