@@ -34,11 +34,11 @@ const BenchmarkComparison = dynamic(
 );
 
 interface BenchmarkComparisonLazyProps {
-  symbol: string;
-  historicalData: Array<{
-    date: string;
-    close: number;
+  portfolioData: Array<{
+    date: Date;
+    value: number;
   }>;
+  period: string;
 }
 
 // Export the lazy-loaded component with the same API
