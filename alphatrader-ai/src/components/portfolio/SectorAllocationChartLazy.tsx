@@ -33,14 +33,13 @@ const SectorAllocationChart = dynamic(
 );
 
 interface SectorAllocation {
-  sector: string;
+  name: string;
   value: number;
   percentage: number;
-  holdings: number;
 }
 
 interface SectorAllocationChartLazyProps {
-  data: SectorAllocation[];
+  sectors: SectorAllocation[];
 }
 
 // Export the lazy-loaded component with the same API
