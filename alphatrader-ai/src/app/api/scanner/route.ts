@@ -28,8 +28,14 @@ export async function POST(request: NextRequest) {
     const filters: ScannerFilters = await request.json();
     console.log("🔍 Starting scan with filters:", filters);
 
-    // Run the scan
-    const results = await scanMarket(filters);
+    // Run the scan with 3-minute timeout for production stability
+    const SCAN_TIMEOUT = 3 * 60 * 1000; // 3 minutes
+    const scanPromise = scanMarket(filters);
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('Scan timeout - please try with fewer stocks or more specific filters')), SCAN_TIMEOUT)
+    );
+
+    const results = await Promise.race([scanPromise, timeoutPromise]);
     console.log(`✅ Scan complete! Found ${results.length} results`);
 
     // Save scan to history

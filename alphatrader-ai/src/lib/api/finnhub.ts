@@ -460,18 +460,21 @@ export async function mapFinnhubToStock(symbol: string): Promise<Partial<Stock> 
 
 /**
  * Get quotes for multiple symbols (batch)
- * Optimized with caching and rate limiting
+ * PRODUCTION-OPTIMIZED with aggressive timeouts and parallel processing
  */
 export async function getQuotes(symbols: string[]): Promise<Array<Partial<Stock>>> {
   console.log(`\n📊 Fetching ${symbols.length} stock quotes from Finnhub...`);
 
-  const BATCH_SIZE = 10; // Fetch 10 at a time to avoid rate limits
-  const BATCH_DELAY = 200; // 200ms delay between batches
+  const BATCH_SIZE = 20; // INCREASED from 10 to 20 for faster processing
+  const BATCH_DELAY = 100; // REDUCED from 200ms to 100ms
+  const REQUEST_TIMEOUT = 3000; // 3 second timeout per request
+  const MAX_PARALLEL_BATCHES = 3; // Process 3 batches in parallel
 
   const stocks: Array<Partial<Stock>> = [];
   let cacheHits = 0;
   let skipped = 0;
   let errors = 0;
+  let timeouts = 0;
 
   // Check cache first
   const uncachedSymbols: string[] = [];
@@ -493,44 +496,69 @@ export async function getQuotes(symbols: string[]): Promise<Array<Partial<Stock>
 
   console.log(`  📡 Fetching ${uncachedSymbols.length} uncached stocks...`);
 
-  // Process in batches
-  for (let batchIndex = 0; batchIndex < Math.ceil(uncachedSymbols.length / BATCH_SIZE); batchIndex++) {
-    const batchStart = batchIndex * BATCH_SIZE;
-    const batchEnd = Math.min(batchStart + BATCH_SIZE, uncachedSymbols.length);
-    const batch = uncachedSymbols.slice(batchStart, batchEnd);
+  // Helper function with aggressive timeout
+  const fetchWithTimeout = async (symbol: string): Promise<{ success: boolean; stock?: Partial<Stock>; skipped?: boolean; error?: string; timeout?: boolean }> => {
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('Timeout')), REQUEST_TIMEOUT)
+    );
 
-    // Add delay between batches (except first)
-    if (batchIndex > 0) {
+    try {
+      const stock = await Promise.race([
+        mapFinnhubToStock(symbol),
+        timeoutPromise
+      ]);
+
+      if (stock) {
+        setCache(`stock:${symbol}`, stock);
+        return { success: true, stock };
+      } else {
+        return { success: false, skipped: true };
+      }
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+
+      if (errorMsg.includes('Timeout')) {
+        return { success: false, timeout: true };
+      }
+      if (errorMsg.includes('403') || errorMsg.includes('Forbidden')) {
+        return { success: false, skipped: true };
+      }
+      return { success: false, error: errorMsg };
+    }
+  };
+
+  // Split into batches
+  const batches: string[][] = [];
+  for (let i = 0; i < uncachedSymbols.length; i += BATCH_SIZE) {
+    batches.push(uncachedSymbols.slice(i, i + BATCH_SIZE));
+  }
+
+  // Process batches in parallel groups
+  for (let groupIndex = 0; groupIndex < batches.length; groupIndex += MAX_PARALLEL_BATCHES) {
+    const batchGroup = batches.slice(groupIndex, groupIndex + MAX_PARALLEL_BATCHES);
+
+    // Add delay between batch groups (except first)
+    if (groupIndex > 0) {
       await new Promise(resolve => setTimeout(resolve, BATCH_DELAY));
     }
 
-    const batchPromises = batch.map(async (symbol) => {
-      try {
-        const stock = await mapFinnhubToStock(symbol);
-        if (stock) {
-          setCache(`stock:${symbol}`, stock);
-          return { success: true, stock };
-        } else {
-          return { success: false, skipped: true };
-        }
-      } catch (error) {
-        const errorMsg = error instanceof Error ? error.message : String(error);
-        // Don't count 403 as errors (expected for some stocks)
-        if (errorMsg.includes('403') || errorMsg.includes('Forbidden')) {
-          return { success: false, skipped: true };
-        }
-        return { success: false, error: errorMsg };
-      }
+    // Process all batches in the group in parallel
+    const groupPromises = batchGroup.map(async (batch) => {
+      const batchPromises = batch.map(symbol => fetchWithTimeout(symbol));
+      return Promise.all(batchPromises);
     });
 
-    const batchResults = await Promise.all(batchPromises);
+    const groupResults = await Promise.all(groupPromises);
+    const allResults = groupResults.flat();
 
-    for (const result of batchResults) {
-      if (result.success && 'stock' in result && result.stock) {
+    for (const result of allResults) {
+      if (result.success && result.stock) {
         stocks.push(result.stock);
-      } else if ('skipped' in result) {
+      } else if (result.skipped) {
         skipped++;
-      } else if ('error' in result) {
+      } else if (result.timeout) {
+        timeouts++;
+      } else if (result.error) {
         errors++;
         if (errors <= 3) {
           console.error(`  ❌ Failed to fetch stock: ${result.error}`);
@@ -539,13 +567,13 @@ export async function getQuotes(symbols: string[]): Promise<Array<Partial<Stock>
     }
 
     // Log progress
-    const processed = (batchIndex + 1) * BATCH_SIZE;
-    console.log(`  📊 Progress: ${Math.min(processed, uncachedSymbols.length)}/${uncachedSymbols.length} (${stocks.length - cacheHits} new)`);
+    const processed = Math.min((groupIndex + MAX_PARALLEL_BATCHES) * BATCH_SIZE, uncachedSymbols.length);
+    console.log(`  📊 Progress: ${processed}/${uncachedSymbols.length} (${stocks.length - cacheHits} new, ${timeouts} timeouts)`);
   }
 
   console.log(
     `  ✅ Successfully fetched ${stocks.length}/${symbols.length} stocks ` +
-    `(${cacheHits} from cache, ${skipped} skipped, ${errors} errors)`
+    `(${cacheHits} from cache, ${skipped} skipped, ${errors} errors, ${timeouts} timeouts)`
   );
   return stocks;
 }
