@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "buildCommand": "cd alphatrader-ai && npm install && npm run build",
+  "buildCommand": "cd alphatrader-ai && npm install && npx prisma generate && npm run build",
   "installCommand": "cd alphatrader-ai && npm install",
   "framework": "nextjs"
 }
