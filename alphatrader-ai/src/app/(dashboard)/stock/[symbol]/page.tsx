@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { StockChart } from "@/components/analysis/StockChart";
+import { StockChartLazy as StockChart } from "@/components/analysis/StockChartLazy";
 import { TechnicalPanel } from "@/components/analysis/TechnicalPanel";
 import { FundamentalsPanel } from "@/components/analysis/FundamentalsPanel";
 import { ShariahPanel } from "@/components/analysis/ShariahPanel";

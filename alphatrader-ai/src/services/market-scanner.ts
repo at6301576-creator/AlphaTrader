@@ -971,16 +971,17 @@ function scorePennyStock(
     return { score: 0, signals };
   }
 
-  // Price is under $5 - base score (increased from 10 to 20)
-  score += 20;
+  // IMPROVED: Give substantial base score to all penny stocks (30 points)
+  // This ensures more stocks pass the threshold (threshold is typically 10-30)
+  score += 30;
   signals.push({
     type: "positive",
     category: "valuation",
     message: `Penny stock at $${stock.currentPrice.toFixed(2)}`,
-    weight: 20,
+    weight: 30,
   });
 
-  // High volume (indicates liquidity)
+  // Volume scoring - MORE LENIENT
   if (stock.volume && stock.avgVolume) {
     const volumeRatio = stock.volume / stock.avgVolume;
     if (volumeRatio > 2) {
@@ -999,28 +1000,28 @@ function scorePennyStock(
         message: `Above average volume`,
         weight: 15,
       });
-    } else if (volumeRatio > 0.5) {
-      // Give some points even for moderate volume
-      score += 5;
+    } else if (volumeRatio > 0.3) {
+      // IMPROVED: Lower threshold from 0.5 to 0.3
+      score += 10;
       signals.push({
         type: "positive",
         category: "momentum",
         message: `Active trading`,
-        weight: 5,
+        weight: 10,
       });
     }
   } else {
-    // If no volume data, give small baseline points (penny stocks often lack data)
-    score += 10;
+    // IMPROVED: Give more points when no volume data (15 instead of 10)
+    score += 15;
     signals.push({
       type: "positive",
       category: "valuation",
       message: `Low-priced opportunity`,
-      weight: 10,
+      weight: 15,
     });
   }
 
-  // Strong daily momentum
+  // Price momentum - MORE LENIENT
   const changePercent = calculateDailyChangePercent(stock);
   if (changePercent > 10) {
     score += 30;
@@ -1039,21 +1040,41 @@ function scorePennyStock(
       weight: 20,
     });
   } else if (changePercent > 2) {
-    score += 10;
+    score += 15;
     signals.push({
       type: "positive",
       category: "momentum",
       message: `Good momentum of ${changePercent.toFixed(1)}%`,
+      weight: 15,
+    });
+  } else if (changePercent > 0) {
+    score += 10;
+    signals.push({
+      type: "positive",
+      category: "momentum",
+      message: `Positive momentum`,
       weight: 10,
     });
-  } else if (changePercent >= 0) {
-    // Even positive or flat movement gets some points
+  } else if (changePercent >= -2) {
+    // IMPROVED: Even slightly negative movement gets points (stability)
     score += 5;
     signals.push({
       type: "positive",
       category: "momentum",
-      message: `Stable or rising`,
+      message: `Stable price action`,
       weight: 5,
+    });
+  }
+
+  // IMPROVED: Add bonus points for having market cap data (sign of legitimate company)
+  if (stock.marketCap && stock.marketCap > 0) {
+    score += 10;
+    const capInMillions = stock.marketCap / 1_000_000;
+    signals.push({
+      type: "positive",
+      category: "quality",
+      message: `Market cap: $${capInMillions.toFixed(1)}M`,
+      weight: 10,
     });
   }
 
@@ -1074,35 +1095,35 @@ function scoreCryptoMining(
 
   const cryptoKeywords = [
     "mining", "bitcoin", "crypto", "blockchain", "ethereum",
-    "digital asset", "miner", "btc", "eth", "coin", "fintech"
+    "digital asset", "miner", "btc", "eth", "coin", "fintech", "web3", "defi"
   ];
 
   const isCryptoRelated = cryptoKeywords.some(
     keyword => industry.includes(keyword) || sector.includes(keyword) || name.includes(keyword)
   );
 
-  // Give base score for all stocks in crypto scan (since they're pre-filtered)
-  // Higher score if keywords match
+  // IMPROVED: Give substantial base score for all stocks (30 points)
+  // Since these are pre-filtered crypto stocks, all should pass threshold
   if (isCryptoRelated) {
-    score += 20;
+    score += 35;
     signals.push({
       type: "positive",
       category: "quality",
       message: "Cryptocurrency/blockchain company",
-      weight: 20,
+      weight: 35,
     });
   } else {
-    // Still give points since it's in our crypto list
-    score += 10;
+    // IMPROVED: Higher base score even without keyword match (25 points)
+    score += 25;
     signals.push({
       type: "positive",
       category: "quality",
       message: "Crypto-related stock",
-      weight: 10,
+      weight: 25,
     });
   }
 
-  // Strong price momentum (crypto stocks are volatile)
+  // Price momentum - MORE LENIENT scoring
   const changePercent = calculateDailyChangePercent(stock);
   if (changePercent > 5) {
     score += 25;
@@ -1120,9 +1141,27 @@ function scoreCryptoMining(
       message: `Positive momentum of ${changePercent.toFixed(1)}%`,
       weight: 15,
     });
+  } else if (changePercent >= 0) {
+    // IMPROVED: Give points for any positive movement
+    score += 10;
+    signals.push({
+      type: "positive",
+      category: "momentum",
+      message: `Stable or rising`,
+      weight: 10,
+    });
+  } else if (changePercent >= -3) {
+    // IMPROVED: Small negative movement still gets points (volatility is normal)
+    score += 5;
+    signals.push({
+      type: "positive",
+      category: "momentum",
+      message: `Normal volatility`,
+      weight: 5,
+    });
   }
 
-  // High volume
+  // Volume - MORE LENIENT
   if (stock.volume && stock.avgVolume) {
     const volumeRatio = stock.volume / stock.avgVolume;
     if (volumeRatio > 1.5) {
@@ -1133,10 +1172,19 @@ function scoreCryptoMining(
         message: `High trading volume`,
         weight: 20,
       });
+    } else if (volumeRatio > 0.8) {
+      // IMPROVED: Lower threshold
+      score += 10;
+      signals.push({
+        type: "positive",
+        category: "momentum",
+        message: `Active trading`,
+        weight: 10,
+      });
     }
   }
 
-  // Profitability (check with P/E since profit margin unavailable)
+  // Profitability - LESS PUNISHING for unprofitable stocks
   if (stock.peRatio && stock.peRatio > 0) {
     score += 20;
     signals.push({
@@ -1146,25 +1194,46 @@ function scoreCryptoMining(
       weight: 20,
     });
   } else if (!stock.peRatio || stock.peRatio < 0) {
-    score -= 10;
+    // IMPROVED: Don't penalize as heavily (many crypto stocks are growth-focused)
+    score += 0;  // Neutral instead of -10
     signals.push({
-      type: "negative",
+      type: "neutral",
       category: "quality",
-      message: "Currently unprofitable",
-      weight: -10,
+      message: "Growth-focused (currently unprofitable)",
+      weight: 0,
     });
   }
 
-  // Market cap consideration
+  // Market cap - MORE INCLUSIVE
   if (stock.marketCap) {
     const capInBillions = stock.marketCap / 1_000_000_000;
+    const capInMillions = stock.marketCap / 1_000_000;
+
     if (capInBillions > 1) {
+      score += 15;
+      signals.push({
+        type: "positive",
+        category: "quality",
+        message: `Established company ($${capInBillions.toFixed(1)}B)`,
+        weight: 15,
+      });
+    } else if (capInMillions > 100) {
+      // IMPROVED: Give points for mid-caps too
       score += 10;
       signals.push({
         type: "positive",
         category: "quality",
-        message: "Established market cap over $1B",
+        message: `Growing company ($${capInMillions.toFixed(0)}M)`,
         weight: 10,
+      });
+    } else if (capInMillions > 10) {
+      // IMPROVED: Even small caps get points
+      score += 5;
+      signals.push({
+        type: "positive",
+        category: "quality",
+        message: `Emerging company ($${capInMillions.toFixed(0)}M)`,
+        weight: 5,
       });
     }
   }

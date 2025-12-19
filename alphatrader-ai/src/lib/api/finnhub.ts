@@ -7,6 +7,7 @@
 
 import type { Stock, ChartDataPoint, NewsItem } from "@/types/stock";
 import { mapIndustryToSector } from "@/lib/sector-mapping";
+import { requestDeduplicator, generateRequestKey } from "@/lib/request-deduplication";
 
 const FINNHUB_API_KEY = process.env.NEXT_PUBLIC_FINNHUB_API_KEY || process.env.FINNHUB_API_KEY;
 const FINNHUB_BASE_URL = "https://finnhub.io/api/v1";
@@ -45,50 +46,59 @@ let requestCount = 0;
 let windowStart = Date.now();
 
 async function rateLimitedFetch<T>(url: string): Promise<T> {
-  // Reset window if needed
-  const now = Date.now();
-  if (now - windowStart >= RATE_WINDOW) {
-    requestCount = 0;
-    windowStart = now;
-  }
+  // Deduplicate the request first
+  const dedupKey = generateRequestKey(url);
 
-  // Wait if at limit
-  if (requestCount >= RATE_LIMIT) {
-    const waitTime = RATE_WINDOW - (now - windowStart);
-    console.warn(`[Finnhub] Rate limit reached (${requestCount}/${RATE_LIMIT}). Waiting ${waitTime}ms...`);
-    await new Promise(resolve => setTimeout(resolve, waitTime));
-    requestCount = 0;
-    windowStart = Date.now();
-  }
+  return requestDeduplicator.deduplicate(
+    dedupKey,
+    async () => {
+      // Reset window if needed
+      const now = Date.now();
+      if (now - windowStart >= RATE_WINDOW) {
+        requestCount = 0;
+        windowStart = now;
+      }
 
-  requestCount++;
+      // Wait if at limit
+      if (requestCount >= RATE_LIMIT) {
+        const waitTime = RATE_WINDOW - (now - windowStart);
+        console.warn(`[Finnhub] Rate limit reached (${requestCount}/${RATE_LIMIT}). Waiting ${waitTime}ms...`);
+        await new Promise(resolve => setTimeout(resolve, waitTime));
+        requestCount = 0;
+        windowStart = Date.now();
+      }
 
-  try {
-    const response = await fetch(url);
+      requestCount++;
 
-    // Handle rate limit response (HTTP 429)
-    if (response.status === 429) {
-      const retryAfter = response.headers.get('Retry-After');
-      const waitTime = retryAfter ? parseInt(retryAfter) * 1000 : RATE_WINDOW;
-      console.warn(`[Finnhub] Rate limit exceeded (429). Retrying after ${waitTime}ms...`);
-      await new Promise(resolve => setTimeout(resolve, waitTime));
-      requestCount = 0;
-      windowStart = Date.now();
-      // Retry the request
-      return rateLimitedFetch<T>(url);
-    }
+      try {
+        const response = await fetch(url);
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`[Finnhub] API error ${response.status}: ${errorText}`);
-      throw new Error(`Finnhub API error: ${response.status} ${response.statusText}`);
-    }
+        // Handle rate limit response (HTTP 429)
+        if (response.status === 429) {
+          const retryAfter = response.headers.get('Retry-After');
+          const waitTime = retryAfter ? parseInt(retryAfter) * 1000 : RATE_WINDOW;
+          console.warn(`[Finnhub] Rate limit exceeded (429). Retrying after ${waitTime}ms...`);
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+          requestCount = 0;
+          windowStart = Date.now();
+          // Retry the request
+          return rateLimitedFetch<T>(url);
+        }
 
-    return response.json();
-  } catch (error) {
-    console.error('[Finnhub] Fetch error:', error);
-    throw error;
-  }
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`[Finnhub] API error ${response.status}: ${errorText}`);
+          throw new Error(`Finnhub API error: ${response.status} ${response.statusText}`);
+        }
+
+        return response.json();
+      } catch (error) {
+        console.error('[Finnhub] Fetch error:', error);
+        throw error;
+      }
+    },
+    { timeout: 30000 } // 30 second timeout
+  );
 }
 
 // ============= TYPE DEFINITIONS =============
