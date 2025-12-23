@@ -18,7 +18,7 @@ const PremiumCard = React.forwardRef<HTMLDivElement, PremiumCardProps>(
           hover && "hover-lift",
           variant === "glass" && "glass-strong border-0",
           variant === "gradient" && "bg-gradient-subtle",
-          variant === "glow" && "shadow-premium-lg",
+          variant === "glow" && "shadow-2xl",
           shine && "shine overflow-hidden",
           className
         )}

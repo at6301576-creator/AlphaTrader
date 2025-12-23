@@ -220,18 +220,7 @@
     border: 1px solid var(--glass-border);
   }
 
-  /* Premium shadow utilities */
-  .shadow-premium {
-    box-shadow: var(--shadow-md);
-  }
-
-  .shadow-premium-lg {
-    box-shadow: var(--shadow-lg);
-  }
-
-  .shadow-premium-xl {
-    box-shadow: var(--shadow-xl);
-  }
+  /* Premium shadow utilities - Use shadow-md, shadow-lg, shadow-xl instead */
 
   /* Gradient backgrounds */
   .bg-gradient-primary {
