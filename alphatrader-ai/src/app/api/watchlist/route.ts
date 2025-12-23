@@ -1,110 +1,78 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { getQuotes, type QuoteResult } from "@/lib/api/yahoo-finance";
+import { watchlistService } from "@/services/watchlist.service";
+import {
+  createSuccessResponse,
+  createErrorResponse,
+  requireAuth,
+  validateRequest,
+  ApiError,
+  ErrorCode,
+} from "@/lib/api-response";
 
+/**
+ * GET /api/watchlist
+ * Fetch all watchlists with stock data for authenticated user
+ */
 export async function GET() {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
   try {
-    // Get all watchlists for user
-    const watchlists = await prisma.watchlist.findMany({
-      where: { userId: session.user.id },
-      orderBy: { createdAt: "desc" },
-    });
+    const session = await auth();
+    requireAuth(session);
 
-    // Collect all unique symbols across all watchlists
-    const allSymbols = new Set<string>();
-    watchlists.forEach((wl) => {
-      const symbolsData = JSON.parse(wl.symbols || "[]");
-      symbolsData.forEach((item: any) => {
-        const symbol = typeof item === "string" ? item : item.symbol;
-        allSymbols.add(symbol);
-      });
-    });
-
-    // Fetch quotes for all symbols
-    const quotes = await getQuotes(Array.from(allSymbols));
-    const quoteMap = new Map<string, QuoteResult>();
-    quotes.forEach((q) => quoteMap.set(q.symbol, q));
-
-    // Build response with stock data
-    const result = watchlists.map((wl) => {
-      const symbolsData = JSON.parse(wl.symbols || "[]");
-
-      // Handle both old format (array of strings) and new format (array of objects with notes)
-      const stocks = symbolsData.map((item: any) => {
-        const symbol = typeof item === "string" ? item : item.symbol;
-        const note = typeof item === "string" ? undefined : item.note;
-        const quote = quoteMap.get(symbol);
-
-        return {
-          symbol,
-          name: quote?.longName || quote?.shortName || symbol,
-          currentPrice: quote?.regularMarketPrice || 0,
-          change: quote?.regularMarketChange || 0,
-          changePercent: quote?.regularMarketChangePercent || 0,
-          volume: quote?.regularMarketVolume || 0,
-          marketCap: quote?.marketCap || 0,
-          note,
-        };
-      });
-
-      return {
-        id: wl.id,
-        name: wl.name,
-        description: wl.description,
-        stocks,
-      };
-    });
-
-    return NextResponse.json(result);
-  } catch (error) {
-    console.error("Error fetching watchlists:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch watchlists" },
-      { status: 500 }
+    const watchlists = await watchlistService.getWatchlistsWithData(
+      session.user!.id
     );
+
+    return createSuccessResponse({ watchlists });
+  } catch (error) {
+    return createErrorResponse(error as Error);
   }
 }
 
+/**
+ * POST /api/watchlist
+ * Create a new watchlist
+ */
 export async function POST(request: NextRequest) {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
   try {
-    const body = await request.json();
-    const { name, description } = body;
+    const session = await auth();
+    requireAuth(session);
 
-    if (!name) {
-      return NextResponse.json(
-        { error: "Watchlist name is required" },
-        { status: 400 }
-      );
-    }
+    const body = await validateRequest(request, (data) => {
+      if (!data.name || typeof data.name !== "string" || data.name.trim() === "") {
+        throw new ApiError(
+          ErrorCode.VALIDATION_ERROR,
+          "Watchlist name is required and must not be empty",
+          400
+        );
+      }
 
-    const watchlist = await prisma.watchlist.create({
-      data: {
-        userId: session.user.id,
-        name,
-        description: description || null,
-        symbols: "[]",
-      },
+      if (data.name.length > 100) {
+        throw new ApiError(
+          ErrorCode.VALIDATION_ERROR,
+          "Watchlist name must not exceed 100 characters",
+          400
+        );
+      }
+
+      if (data.description && data.description.length > 500) {
+        throw new ApiError(
+          ErrorCode.VALIDATION_ERROR,
+          "Description must not exceed 500 characters",
+          400
+        );
+      }
+
+      return data;
     });
 
-    return NextResponse.json(watchlist);
+    const watchlist = await watchlistService.createWatchlist(session.user!.id, {
+      name: body.name,
+      description: body.description,
+    });
+
+    return createSuccessResponse({ watchlist }, 201);
   } catch (error) {
-    console.error("Error creating watchlist:", error);
-    return NextResponse.json(
-      { error: "Failed to create watchlist" },
-      { status: 500 }
-    );
+    return createErrorResponse(error as Error);
   }
 }

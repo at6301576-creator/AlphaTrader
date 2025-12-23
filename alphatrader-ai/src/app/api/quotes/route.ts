@@ -1,7 +1,15 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { getQuotes } from "@/lib/api/yahoo-finance";
-import { withRateLimit, getIdentifier, rateLimiters } from "@/lib/rate-limit";
+import { withRateLimit } from "@/lib/rate-limit";
 import { auth } from "@/lib/auth";
+import {
+  createSuccessResponse,
+  createErrorResponse,
+  validateRequest,
+  withRateLimitHeaders,
+  ErrorCode,
+  ApiError,
+} from "@/lib/api-response";
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,45 +28,37 @@ export async function POST(request: NextRequest) {
       return rateLimitResponse;
     }
 
-    const body = await request.json();
-    const { symbols } = body;
-
-    if (!symbols || !Array.isArray(symbols) || symbols.length === 0) {
-      return NextResponse.json(
-        { error: "Symbols array is required" },
-        { status: 400 }
-      );
-    }
-
-    // Limit number of symbols per request
-    if (symbols.length > 50) {
-      return NextResponse.json(
-        { error: "Maximum 50 symbols per request" },
-        { status: 400 }
-      );
-    }
-
-    const quotes = await getQuotes(symbols);
-
-    // Get rate limit info for response headers
-    const identifier = getIdentifier(request, userId);
-    const rateLimitInfo = await rateLimiters.api.check(identifier);
-
-    return NextResponse.json(
-      { quotes },
-      {
-        headers: {
-          "X-RateLimit-Limit": rateLimitInfo.limit.toString(),
-          "X-RateLimit-Remaining": rateLimitInfo.remaining.toString(),
-          "X-RateLimit-Reset": rateLimitInfo.reset.toString(),
-        },
+    // Parse and validate request body
+    const body = await validateRequest(request, (data) => {
+      if (!data.symbols || !Array.isArray(data.symbols) || data.symbols.length === 0) {
+        throw new ApiError(
+          ErrorCode.VALIDATION_ERROR,
+          "Symbols array is required and must not be empty",
+          400
+        );
       }
+
+      if (data.symbols.length > 50) {
+        throw new ApiError(
+          ErrorCode.VALIDATION_ERROR,
+          "Maximum 50 symbols allowed per request",
+          400
+        );
+      }
+
+      return data;
+    });
+
+    const quotes = await getQuotes(body.symbols);
+
+    // Return success response with rate limit headers
+    return withRateLimitHeaders(
+      createSuccessResponse({ quotes }),
+      request,
+      userId,
+      "api"
     );
   } catch (error) {
-    console.error("Error fetching quotes:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch quotes" },
-      { status: 500 }
-    );
+    return createErrorResponse(error as Error);
   }
 }

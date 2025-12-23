@@ -57,11 +57,11 @@ model PortfolioSnapshot {
   totalGainLossPerc Float
   dayChange         Float?
   dayChangePerc     Float?
-  holdings          String    // JSON array of holdings with current values
-  sectorAllocation  String?   // JSON object with sector breakdown
-  assetAllocation   String?   // JSON object with asset type breakdown
-  topPerformers     String?   // JSON array of top 5 gainers
-  topLosers         String?   // JSON array of top 5 losers
+  holdings          Json      // JSON array of holdings with current values
+  sectorAllocation  Json?     // JSON object with sector breakdown
+  assetAllocation   Json?     // JSON object with asset type breakdown
+  topPerformers     Json?     // JSON array of top 5 gainers
+  topLosers         Json?     // JSON array of top 5 losers
   createdAt         DateTime  @default(now())
 
   @@index([userId])
@@ -73,7 +73,7 @@ model ScreenerPreset {
   userId        String
   name          String
   description   String?
-  filters       String    // JSON object with filter criteria
+  filters       Json      // JSON object with filter criteria
   isPublic      Boolean   @default(false)
   usageCount    Int       @default(0)
   createdAt     DateTime  @default(now())
@@ -88,7 +88,7 @@ model Watchlist {
   userId        String
   name          String
   description   String?
-  symbols       String    // JSON array of symbols
+  symbols       Json      // JSON array of symbols
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -129,10 +129,10 @@ model ScanHistory {
   id            String    @id @default(cuid())
   userId        String
   scanType      String    // undervalued, momentum, dividend, growth, shariah
-  markets       String    // JSON array of market codes
-  parameters    String    // JSON of scan parameters
+  markets       Json      // JSON array of market codes
+  parameters    Json      // JSON of scan parameters
   resultsCount  Int
-  topResults    String?   // JSON of top 10 results for quick reference
+  topResults    Json?     // JSON of top 10 results for quick reference
   createdAt     DateTime  @default(now())
 
   user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -187,16 +187,16 @@ model StockCache {
 
   // Shariah compliance
   isShariahCompliant  Boolean?
-  shariahDetails      String?   // JSON with detailed screening results
+  shariahDetails      Json?     // JSON with detailed screening results
 
   // Technical data
-  technicalData       String?   // JSON with indicators
+  technicalData       Json?     // JSON with indicators
 
   // Full fundamental data
-  fundamentalData     String?   // JSON with detailed financials
+  fundamentalData     Json?     // JSON with detailed financials
 
   // Chart data (for caching)
-  chartData           String?   // JSON with OHLCV data
+  chartData           Json?     // JSON with OHLCV data
 
   lastUpdated         DateTime  @default(now())
 
@@ -260,7 +260,7 @@ model TechnicalAlert {
   // Stochastic: { kPeriod: 14, dPeriod: 3, overboughtLevel: 80, oversoldLevel: 20 }
   // MA Crossover: { fastPeriod: 50, slowPeriod: 200, type: 'sma' or 'ema' }
   // Bollinger Bands: { period: 20, stdDev: 2, condition: 'price_above_upper' or 'price_below_lower' }
-  parameters      String    // JSON string
+  parameters      Json      // JSON parameters
 
   // Threshold value (if applicable)
   threshold       Float?
