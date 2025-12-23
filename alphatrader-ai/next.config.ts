@@ -28,8 +28,6 @@ const nextConfig: NextConfig = {
   // Enable React Strict Mode
   reactStrictMode: true,
 
-  // Enable SWC minification (default in Next.js 13+, but explicit is good)
-  swcMinify: true,
 
   // Optimize images
   images: {

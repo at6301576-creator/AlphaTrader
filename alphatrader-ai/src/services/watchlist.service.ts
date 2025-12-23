@@ -328,7 +328,7 @@ export class WatchlistService extends BaseService {
         this.prisma.watchlist.update({
           where: { id: watchlistId },
           data: {
-            symbols: this.stringifyJsonField(updatedSymbols),
+            symbols: this.prepareJsonField(updatedSymbols),
           },
         }),
       "Failed to add symbols to watchlist"
@@ -374,7 +374,7 @@ export class WatchlistService extends BaseService {
         this.prisma.watchlist.update({
           where: { id: watchlistId },
           data: {
-            symbols: this.stringifyJsonField(updatedSymbols),
+            symbols: this.prepareJsonField(updatedSymbols),
           },
         }),
       "Failed to remove symbol from watchlist"
@@ -424,7 +424,7 @@ export class WatchlistService extends BaseService {
         this.prisma.watchlist.update({
           where: { id: watchlistId },
           data: {
-            symbols: this.stringifyJsonField(updatedSymbols),
+            symbols: this.prepareJsonField(updatedSymbols),
           },
         }),
       "Failed to update symbol note"

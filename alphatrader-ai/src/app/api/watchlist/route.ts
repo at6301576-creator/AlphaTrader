@@ -5,7 +5,6 @@ import {
   createSuccessResponse,
   createErrorResponse,
   requireAuth,
-  validateRequest,
   ApiError,
   ErrorCode,
 } from "@/lib/api-response";
@@ -19,7 +18,7 @@ export async function GET() {
     const session = await auth();
     requireAuth(session);
 
-    const watchlists = await watchlistService.getWatchlistsWithData(
+    const watchlists = await watchlistService.getWatchlists(
       session.user!.id
     );
 
@@ -38,40 +37,38 @@ export async function POST(request: NextRequest) {
     const session = await auth();
     requireAuth(session);
 
-    const body = await validateRequest(request, (data) => {
-      if (!data.name || typeof data.name !== "string" || data.name.trim() === "") {
-        throw new ApiError(
-          ErrorCode.VALIDATION_ERROR,
-          "Watchlist name is required and must not be empty",
-          400
-        );
-      }
+    const data = await request.json();
+    
+    if (!data.name || typeof data.name !== "string" || data.name.trim() === "") {
+      throw new ApiError(
+        ErrorCode.VALIDATION_ERROR,
+        "Watchlist name is required and must not be empty",
+        400
+      );
+    }
 
-      if (data.name.length > 100) {
-        throw new ApiError(
-          ErrorCode.VALIDATION_ERROR,
-          "Watchlist name must not exceed 100 characters",
-          400
-        );
-      }
+    if (data.name.length > 100) {
+      throw new ApiError(
+        ErrorCode.VALIDATION_ERROR,
+        "Watchlist name must not exceed 100 characters",
+        400
+      );
+    }
 
-      if (data.description && data.description.length > 500) {
-        throw new ApiError(
-          ErrorCode.VALIDATION_ERROR,
-          "Description must not exceed 500 characters",
-          400
-        );
-      }
-
-      return data;
-    });
+    if (data.description && data.description.length > 500) {
+      throw new ApiError(
+        ErrorCode.VALIDATION_ERROR,
+        "Description must not exceed 500 characters",
+        400
+      );
+    }
 
     const watchlist = await watchlistService.createWatchlist(session.user!.id, {
-      name: body.name,
-      description: body.description,
+      name: data.name,
+      description: data.description,
     });
 
-    return createSuccessResponse({ watchlist }, 201);
+    return createSuccessResponse({ watchlist }, { status: 201 });
   } catch (error) {
     return createErrorResponse(error as Error);
   }

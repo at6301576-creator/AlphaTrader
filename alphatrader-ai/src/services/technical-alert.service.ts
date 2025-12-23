@@ -433,7 +433,7 @@ export class TechnicalAlertService extends BaseService {
       companyName: alert.companyName || undefined,
       indicatorType: alert.indicatorType as IndicatorType,
       condition: alert.condition as AlertCondition,
-      parameters: this.parseJsonFieldTypeSafe<IndicatorParameters>(
+      parameters: this.parseJsonField<IndicatorParameters>(
         alert.parameters,
         {} as IndicatorParameters,
         "parameters"

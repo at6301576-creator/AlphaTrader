@@ -1,8 +1,8 @@
 import * as React from "react"
 import { cn } from "@/lib/utils"
-import { Card, CardProps } from "./card"
+import { Card } from "./card"
 
-export interface PremiumCardProps extends CardProps {
+export interface PremiumCardProps extends React.ComponentProps<"div"> {
   variant?: "default" | "glass" | "gradient" | "glow"
   hover?: boolean
   shine?: boolean

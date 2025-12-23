@@ -5,8 +5,6 @@ import { auth } from "@/lib/auth";
 import {
   createSuccessResponse,
   createErrorResponse,
-  validateRequest,
-  withRateLimitHeaders,
   ErrorCode,
   ApiError,
 } from "@/lib/api-response";
@@ -29,35 +27,28 @@ export async function POST(request: NextRequest) {
     }
 
     // Parse and validate request body
-    const body = await validateRequest(request, (data) => {
-      if (!data.symbols || !Array.isArray(data.symbols) || data.symbols.length === 0) {
-        throw new ApiError(
-          ErrorCode.VALIDATION_ERROR,
-          "Symbols array is required and must not be empty",
-          400
-        );
-      }
+    const data = await request.json();
 
-      if (data.symbols.length > 50) {
-        throw new ApiError(
-          ErrorCode.VALIDATION_ERROR,
-          "Maximum 50 symbols allowed per request",
-          400
-        );
-      }
+    if (!data.symbols || !Array.isArray(data.symbols) || data.symbols.length === 0) {
+      throw new ApiError(
+        ErrorCode.VALIDATION_ERROR,
+        "Symbols array is required and must not be empty",
+        400
+      );
+    }
 
-      return data;
-    });
+    if (data.symbols.length > 50) {
+      throw new ApiError(
+        ErrorCode.VALIDATION_ERROR,
+        "Maximum 50 symbols allowed per request",
+        400
+      );
+    }
 
-    const quotes = await getQuotes(body.symbols);
+    const quotes = await getQuotes(data.symbols);
 
-    // Return success response with rate limit headers
-    return withRateLimitHeaders(
-      createSuccessResponse({ quotes }),
-      request,
-      userId,
-      "api"
-    );
+    // Return success response
+    return createSuccessResponse({ quotes });
   } catch (error) {
     return createErrorResponse(error as Error);
   }
