@@ -2,7 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { PremiumCard } from "@/components/ui/premium-card";
+import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   TrendingUp,
   Brain,
@@ -17,6 +18,10 @@ import {
   Github,
   Twitter,
   Linkedin,
+  Users,
+  DollarSign,
+  Activity,
+  Target,
 } from "lucide-react";
 
 export default async function LandingPage() {
@@ -25,40 +30,56 @@ export default async function LandingPage() {
   if (session?.user) {
     redirect("/dashboard");
   }
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-emerald-950">
+    <div className="min-h-screen bg-background">
+      {/* Animated background gradient */}
+      <div className="fixed inset-0 bg-gradient-animated opacity-30 pointer-events-none" />
+
       {/* Navigation */}
-      <nav className="fixed top-0 w-full z-50 bg-gray-950/80 backdrop-blur-xl border-b border-gray-800/50">
+      <nav className="fixed top-0 w-full z-50 glass-strong border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-lg flex items-center justify-center">
-                <TrendingUp className="h-5 w-5 text-white" />
+              <div className="w-10 h-10 bg-gradient-primary rounded-xl flex items-center justify-center shadow-premium">
+                <TrendingUp className="h-6 w-6 text-primary-foreground" />
               </div>
-              <span className="text-xl font-bold bg-gradient-to-r from-emerald-400 to-emerald-600 bg-clip-text text-transparent">
+              <span className="text-xl font-bold text-gradient">
                 AlphaTrader AI
               </span>
             </div>
+
             <div className="hidden md:flex items-center gap-8">
-              <a href="#features" className="text-sm text-gray-300 hover:text-white transition-colors">
+              <a
+                href="#features"
+                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-smooth"
+              >
                 Features
               </a>
-              <a href="#pricing" className="text-sm text-gray-300 hover:text-white transition-colors">
+              <a
+                href="#pricing"
+                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-smooth"
+              >
                 Pricing
               </a>
-              <a href="#about" className="text-sm text-gray-300 hover:text-white transition-colors">
-                About
+              <a
+                href="#testimonials"
+                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-smooth"
+              >
+                Testimonials
               </a>
             </div>
+
             <div className="flex items-center gap-3">
               <Link href="/login">
-                <Button variant="ghost" className="text-gray-300 hover:text-white hover:bg-gray-800">
+                <Button variant="ghost" className="button-press">
                   Sign In
                 </Button>
               </Link>
               <Link href="/register">
-                <Button className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700">
+                <Button variant="gradient" size="lg" className="group">
                   Get Started
+                  <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
                 </Button>
               </Link>
             </div>
@@ -67,331 +88,448 @@ export default async function LandingPage() {
       </nav>
 
       {/* Hero Section */}
-      <section className="pt-32 pb-20 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-full mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-            <Sparkles className="h-4 w-4 text-emerald-400" />
-            <span className="text-sm text-emerald-300">AI-Powered Islamic Stock Analysis</span>
+      <section className="relative pt-32 pb-20 px-4 sm:px-6 lg:px-8 overflow-hidden">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center relative z-10">
+            {/* Badge */}
+            <div className="inline-flex items-center gap-2 px-4 py-2 glass rounded-full mb-8 fade-in shadow-premium">
+              <Sparkles className="h-4 w-4 text-primary" />
+              <span className="text-sm font-medium">AI-Powered Islamic Stock Analysis</span>
+            </div>
+
+            {/* Heading */}
+            <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold mb-6 slide-in-left">
+              <span className="block mb-2">Invest with</span>
+              <span className="text-gradient block">Confidence & Faith</span>
+            </h1>
+
+            <p className="text-xl text-muted-foreground mb-12 max-w-3xl mx-auto slide-in-right">
+              The ultimate platform for Shariah-compliant stock analysis, powered by advanced AI and comprehensive technical indicators.
+            </p>
+
+            {/* CTA Buttons */}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16 fade-in">
+              <Link href="/register">
+                <Button variant="gradient" size="lg" className="group px-8 h-12 text-lg">
+                  Start Free Trial
+                  <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                </Button>
+              </Link>
+              <Link href="#features">
+                <Button variant="outline" size="lg" className="px-8 h-12 text-lg">
+                  Watch Demo
+                </Button>
+              </Link>
+            </div>
+
+            {/* Hero Preview Cards */}
+            <div className="relative max-w-5xl mx-auto fade-in">
+              <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-chart-2/20 blur-3xl opacity-50" />
+
+              <div className="relative grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* Shariah Compliance Card */}
+                <PremiumCard variant="glass" className="group">
+                  <CardContent className="p-6">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="p-3 bg-gradient-success rounded-xl shadow-premium">
+                        <ShieldCheck className="h-6 w-6 text-white" />
+                      </div>
+                      <span className="text-sm font-semibold text-success">Shariah Compliant</span>
+                    </div>
+                    <div className="text-3xl font-bold mb-2">AAPL</div>
+                    <div className="text-sm text-muted-foreground">Apple Inc.</div>
+                    <div className="mt-4 pt-4 border-t border-border">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-muted-foreground">Compliance Score</span>
+                        <span className="font-semibold text-success">98%</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </PremiumCard>
+
+                {/* AI Insight Card */}
+                <PremiumCard variant="gradient" className="relative overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-primary opacity-90" />
+                  <CardContent className="p-6 relative z-10 text-primary-foreground">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
+                        <Brain className="h-6 w-6" />
+                      </div>
+                      <span className="text-sm font-semibold opacity-90">AI Insight</span>
+                    </div>
+                    <div className="text-2xl font-bold mb-2">Strong Buy</div>
+                    <div className="text-sm opacity-90">Confidence: 87%</div>
+                    <div className="mt-4 pt-4 border-t border-white/20">
+                      <div className="flex items-center gap-2 text-xs opacity-90">
+                        <Activity className="h-3 w-3" />
+                        <span>12 indicators analyzed</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </PremiumCard>
+
+                {/* Technical Card */}
+                <PremiumCard variant="glass" className="group">
+                  <CardContent className="p-6">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="p-3 bg-gradient-to-br from-chart-4 to-chart-3 rounded-xl shadow-premium">
+                        <LineChart className="h-6 w-6 text-white" />
+                      </div>
+                      <span className="text-sm font-semibold text-chart-4">Technical</span>
+                    </div>
+                    <div className="text-2xl font-bold text-success mb-2">Bullish</div>
+                    <div className="text-sm text-muted-foreground">RSI: 65 | MACD: +</div>
+                    <div className="mt-4 pt-4 border-t border-border">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-muted-foreground">Trend Strength</span>
+                        <span className="font-semibold text-success">Strong</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </PremiumCard>
+              </div>
+            </div>
           </div>
+        </div>
+      </section>
 
-          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold mb-6 animate-in fade-in slide-in-from-bottom-4 duration-700" style={{ animationDelay: '100ms', animationFillMode: 'backwards' }}>
-            <span className="bg-gradient-to-r from-white via-gray-100 to-gray-300 bg-clip-text text-transparent">
-              Invest with
-            </span>
-            <br />
-            <span className="bg-gradient-to-r from-emerald-400 via-emerald-500 to-emerald-600 bg-clip-text text-transparent">
-              Confidence & Faith
-            </span>
-          </h1>
-
-          <p className="text-xl text-gray-400 mb-12 max-w-3xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700" style={{ animationDelay: '200ms', animationFillMode: 'backwards' }}>
-            The ultimate platform for Shariah-compliant stock analysis, powered by advanced AI and comprehensive technical indicators.
-          </p>
-
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-in fade-in slide-in-from-bottom-4 duration-700" style={{ animationDelay: '300ms', animationFillMode: 'backwards' }}>
-            <Link href="/register">
-              <Button size="lg" className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white px-8 py-6 text-lg group">
-                Start Free Trial
-                <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
-              </Button>
-            </Link>
-            <Link href="#features">
-              <Button size="lg" variant="outline" className="border-gray-700 hover:bg-gray-800 px-8 py-6 text-lg">
-                Watch Demo
-              </Button>
-            </Link>
-          </div>
-
-          {/* Hero Image/Preview */}
-          <div className="mt-20 animate-in fade-in slide-in-from-bottom-8 duration-1000" style={{ animationDelay: '400ms', animationFillMode: 'backwards' }}>
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-t from-gray-950 via-transparent to-transparent z-10" />
-              <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/20 to-purple-500/20 blur-3xl" />
-              <Card className="bg-gray-900/50 border-gray-800 backdrop-blur-sm overflow-hidden">
-                <CardContent className="p-8">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="bg-gray-950/50 rounded-lg p-6 border border-emerald-500/20">
-                      <div className="flex items-center gap-3 mb-4">
-                        <div className="p-2 bg-emerald-500/10 rounded-lg">
-                          <ShieldCheck className="h-6 w-6 text-emerald-400" />
-                        </div>
-                        <span className="text-sm font-semibold text-emerald-400">Shariah Compliant</span>
-                      </div>
-                      <div className="text-3xl font-bold text-white mb-2">AAPL</div>
-                      <div className="text-sm text-gray-400">Apple Inc.</div>
-                    </div>
-                    <div className="bg-gray-950/50 rounded-lg p-6 border border-blue-500/20">
-                      <div className="flex items-center gap-3 mb-4">
-                        <div className="p-2 bg-blue-500/10 rounded-lg">
-                          <Brain className="h-6 w-6 text-blue-400" />
-                        </div>
-                        <span className="text-sm font-semibold text-blue-400">AI Insight</span>
-                      </div>
-                      <div className="text-lg font-semibold text-white mb-2">Strong Buy</div>
-                      <div className="text-sm text-gray-400">Confidence: 87%</div>
-                    </div>
-                    <div className="bg-gray-950/50 rounded-lg p-6 border border-purple-500/20">
-                      <div className="flex items-center gap-3 mb-4">
-                        <div className="p-2 bg-purple-500/10 rounded-lg">
-                          <LineChart className="h-6 w-6 text-purple-400" />
-                        </div>
-                        <span className="text-sm font-semibold text-purple-400">Technical</span>
-                      </div>
-                      <div className="text-lg font-semibold text-emerald-400 mb-2">Bullish</div>
-                      <div className="text-sm text-gray-400">RSI: 65 | MACD: +</div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+      {/* Stats Section */}
+      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-muted/30">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+            <div className="text-center fade-in">
+              <div className="text-4xl sm:text-5xl font-bold text-gradient mb-2">10K+</div>
+              <div className="text-sm text-muted-foreground">Active Investors</div>
+            </div>
+            <div className="text-center fade-in" style={{ animationDelay: "100ms" }}>
+              <div className="text-4xl sm:text-5xl font-bold text-gradient mb-2">$2.5B+</div>
+              <div className="text-sm text-muted-foreground">Assets Tracked</div>
+            </div>
+            <div className="text-center fade-in" style={{ animationDelay: "200ms" }}>
+              <div className="text-4xl sm:text-5xl font-bold text-gradient mb-2">500K+</div>
+              <div className="text-sm text-muted-foreground">Analyses Run</div>
+            </div>
+            <div className="text-center fade-in" style={{ animationDelay: "300ms" }}>
+              <div className="text-4xl sm:text-5xl font-bold text-gradient mb-2">98%</div>
+              <div className="text-sm text-muted-foreground">Satisfaction Rate</div>
             </div>
           </div>
         </div>
       </section>
 
       {/* Features Section */}
-      <section id="features" className="py-20 px-4 sm:px-6 lg:px-8 bg-gray-950/50">
+      <section id="features" className="py-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl sm:text-5xl font-bold mb-4">
-              <span className="bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
-                Everything You Need
-              </span>
+              Everything You Need
             </h2>
-            <p className="text-xl text-gray-400 max-w-2xl mx-auto">
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
               Powerful tools and insights to make informed investment decisions
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* Feature 1 */}
-            <Card className="bg-gray-900/50 border-gray-800 hover:border-emerald-500/50 transition-all duration-300 group">
+            <PremiumCard className="group">
               <CardContent className="p-6">
-                <div className="w-12 h-12 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                <div className="w-12 h-12 bg-gradient-success rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-premium">
                   <ShieldCheck className="h-6 w-6 text-white" />
                 </div>
-                <h3 className="text-xl font-bold text-white mb-2">Shariah Compliance Screening</h3>
-                <p className="text-gray-400">
+                <h3 className="text-xl font-bold mb-2">Shariah Compliance Screening</h3>
+                <p className="text-muted-foreground">
                   Comprehensive screening based on AAOIFI standards. Know instantly if a stock is halal or haram with detailed compliance reports.
                 </p>
               </CardContent>
-            </Card>
+            </PremiumCard>
 
             {/* Feature 2 */}
-            <Card className="bg-gray-900/50 border-gray-800 hover:border-blue-500/50 transition-all duration-300 group">
+            <PremiumCard className="group">
               <CardContent className="p-6">
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                <div className="w-12 h-12 bg-gradient-primary rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-premium">
                   <Brain className="h-6 w-6 text-white" />
                 </div>
-                <h3 className="text-xl font-bold text-white mb-2">AI-Powered Insights</h3>
-                <p className="text-gray-400">
+                <h3 className="text-xl font-bold mb-2">AI-Powered Insights</h3>
+                <p className="text-muted-foreground">
                   Advanced machine learning analyzes market trends, sentiment, and patterns to provide actionable investment recommendations.
                 </p>
               </CardContent>
-            </Card>
+            </PremiumCard>
 
             {/* Feature 3 */}
-            <Card className="bg-gray-900/50 border-gray-800 hover:border-purple-500/50 transition-all duration-300 group">
+            <PremiumCard className="group">
               <CardContent className="p-6">
-                <div className="w-12 h-12 bg-gradient-to-br from-purple-400 to-purple-600 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                <div className="w-12 h-12 bg-gradient-to-br from-chart-4 to-chart-3 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-premium">
                   <LineChart className="h-6 w-6 text-white" />
                 </div>
-                <h3 className="text-xl font-bold text-white mb-2">13 Technical Indicators</h3>
-                <p className="text-gray-400">
+                <h3 className="text-xl font-bold mb-2">13 Technical Indicators</h3>
+                <p className="text-muted-foreground">
                   Full suite of technical analysis tools including RSI, MACD, Bollinger Bands, ATR, ADX, Stochastic, and more.
                 </p>
               </CardContent>
-            </Card>
+            </PremiumCard>
 
             {/* Feature 4 */}
-            <Card className="bg-gray-900/50 border-gray-800 hover:border-yellow-500/50 transition-all duration-300 group">
+            <PremiumCard className="group">
               <CardContent className="p-6">
-                <div className="w-12 h-12 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                <div className="w-12 h-12 bg-gradient-to-br from-chart-5 to-chart-2 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-premium">
                   <BarChart3 className="h-6 w-6 text-white" />
                 </div>
-                <h3 className="text-xl font-bold text-white mb-2">Real-Time Charts</h3>
-                <p className="text-gray-400">
+                <h3 className="text-xl font-bold mb-2">Real-Time Charts</h3>
+                <p className="text-muted-foreground">
                   Interactive TradingView-powered charts with candlestick, line, and area views. Customize timeframes and overlays.
                 </p>
               </CardContent>
-            </Card>
+            </PremiumCard>
 
             {/* Feature 5 */}
-            <Card className="bg-gray-900/50 border-gray-800 hover:border-red-500/50 transition-all duration-300 group">
+            <PremiumCard className="group">
               <CardContent className="p-6">
-                <div className="w-12 h-12 bg-gradient-to-br from-red-400 to-red-600 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                <div className="w-12 h-12 bg-gradient-danger rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-premium">
                   <Bell className="h-6 w-6 text-white" />
                 </div>
-                <h3 className="text-xl font-bold text-white mb-2">Smart Alerts</h3>
-                <p className="text-gray-400">
+                <h3 className="text-xl font-bold mb-2">Smart Alerts</h3>
+                <p className="text-muted-foreground">
                   Set custom alerts for price movements, technical indicators, and Shariah compliance changes. Never miss an opportunity.
                 </p>
               </CardContent>
-            </Card>
+            </PremiumCard>
 
             {/* Feature 6 */}
-            <Card className="bg-gray-900/50 border-gray-800 hover:border-emerald-500/50 transition-all duration-300 group">
+            <PremiumCard className="group">
               <CardContent className="p-6">
-                <div className="w-12 h-12 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                <div className="w-12 h-12 bg-gradient-primary rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-premium">
                   <Zap className="h-6 w-6 text-white" />
                 </div>
-                <h3 className="text-xl font-bold text-white mb-2">Portfolio Optimization</h3>
-                <p className="text-gray-400">
+                <h3 className="text-xl font-bold mb-2">Portfolio Optimization</h3>
+                <p className="text-muted-foreground">
                   AI-driven portfolio rebalancing and optimization to maximize returns while maintaining Shariah compliance.
                 </p>
               </CardContent>
-            </Card>
+            </PremiumCard>
           </div>
         </div>
       </section>
 
       {/* Pricing Section */}
-      <section id="pricing" className="py-20 px-4 sm:px-6 lg:px-8">
+      <section id="pricing" className="py-20 px-4 sm:px-6 lg:px-8 bg-muted/30">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl sm:text-5xl font-bold mb-4">
-              <span className="bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
-                Simple, Transparent Pricing
-              </span>
+              Simple, Transparent Pricing
             </h2>
-            <p className="text-xl text-gray-400 max-w-2xl mx-auto">
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
               Choose the plan that fits your investment journey
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
             {/* Free Plan */}
-            <Card className="bg-gray-900/50 border-gray-800 hover:border-gray-700 transition-all duration-300">
-              <CardContent className="p-8">
-                <h3 className="text-2xl font-bold text-white mb-2">Starter</h3>
-                <div className="mb-6">
-                  <span className="text-4xl font-bold text-white">$0</span>
-                  <span className="text-gray-400">/month</span>
+            <PremiumCard>
+              <CardHeader>
+                <CardTitle>Starter</CardTitle>
+                <div className="mt-4">
+                  <span className="text-4xl font-bold">$0</span>
+                  <span className="text-muted-foreground">/month</span>
                 </div>
-                <ul className="space-y-3 mb-8">
-                  <li className="flex items-center gap-2 text-gray-300">
-                    <CheckCircle2 className="h-5 w-5 text-emerald-400" />
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <ul className="space-y-3">
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="h-5 w-5 text-success flex-shrink-0" />
                     <span>Shariah Compliance Check</span>
                   </li>
-                  <li className="flex items-center gap-2 text-gray-300">
-                    <CheckCircle2 className="h-5 w-5 text-emerald-400" />
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="h-5 w-5 text-success flex-shrink-0" />
                     <span>Basic Technical Indicators</span>
                   </li>
-                  <li className="flex items-center gap-2 text-gray-300">
-                    <CheckCircle2 className="h-5 w-5 text-emerald-400" />
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="h-5 w-5 text-success flex-shrink-0" />
                     <span>5 Watchlist Stocks</span>
                   </li>
-                  <li className="flex items-center gap-2 text-gray-400">
-                    <CheckCircle2 className="h-5 w-5 text-gray-600" />
+                  <li className="flex items-center gap-2 text-muted-foreground">
+                    <CheckCircle2 className="h-5 w-5 opacity-30 flex-shrink-0" />
                     <span>AI Insights</span>
                   </li>
-                  <li className="flex items-center gap-2 text-gray-400">
-                    <CheckCircle2 className="h-5 w-5 text-gray-600" />
+                  <li className="flex items-center gap-2 text-muted-foreground">
+                    <CheckCircle2 className="h-5 w-5 opacity-30 flex-shrink-0" />
                     <span>Advanced Charts</span>
                   </li>
                 </ul>
                 <Link href="/register">
-                  <Button variant="outline" className="w-full border-gray-700 hover:bg-gray-800">
+                  <Button variant="outline" className="w-full mt-6">
                     Get Started
                   </Button>
                 </Link>
               </CardContent>
-            </Card>
+            </PremiumCard>
 
             {/* Pro Plan */}
-            <Card className="bg-gradient-to-br from-emerald-900/50 to-emerald-950/50 border-emerald-500 relative overflow-hidden">
-              <div className="absolute top-0 right-0 bg-emerald-500 text-white text-xs font-bold px-3 py-1 rounded-bl-lg">
-                POPULAR
-              </div>
-              <CardContent className="p-8">
-                <h3 className="text-2xl font-bold text-white mb-2">Professional</h3>
-                <div className="mb-6">
-                  <span className="text-4xl font-bold text-white">$29</span>
-                  <span className="text-gray-400">/month</span>
+            <PremiumCard variant="glow" className="relative border-2 border-primary">
+              <div className="absolute -top-4 left-1/2 -translate-x-1/2">
+                <div className="bg-gradient-primary text-primary-foreground text-xs font-bold px-4 py-1 rounded-full shadow-premium">
+                  MOST POPULAR
                 </div>
-                <ul className="space-y-3 mb-8">
-                  <li className="flex items-center gap-2 text-gray-300">
-                    <CheckCircle2 className="h-5 w-5 text-emerald-400" />
+              </div>
+              <CardHeader>
+                <CardTitle>Professional</CardTitle>
+                <div className="mt-4">
+                  <span className="text-4xl font-bold">$29</span>
+                  <span className="text-muted-foreground">/month</span>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <ul className="space-y-3">
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="h-5 w-5 text-success flex-shrink-0" />
                     <span>Everything in Starter</span>
                   </li>
-                  <li className="flex items-center gap-2 text-gray-300">
-                    <CheckCircle2 className="h-5 w-5 text-emerald-400" />
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="h-5 w-5 text-success flex-shrink-0" />
                     <span>AI-Powered Insights</span>
                   </li>
-                  <li className="flex items-center gap-2 text-gray-300">
-                    <CheckCircle2 className="h-5 w-5 text-emerald-400" />
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="h-5 w-5 text-success flex-shrink-0" />
                     <span>All 13 Technical Indicators</span>
                   </li>
-                  <li className="flex items-center gap-2 text-gray-300">
-                    <CheckCircle2 className="h-5 w-5 text-emerald-400" />
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="h-5 w-5 text-success flex-shrink-0" />
                     <span>Unlimited Watchlist</span>
                   </li>
-                  <li className="flex items-center gap-2 text-gray-300">
-                    <CheckCircle2 className="h-5 w-5 text-emerald-400" />
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="h-5 w-5 text-success flex-shrink-0" />
                     <span>Priority Support</span>
                   </li>
                 </ul>
                 <Link href="/register">
-                  <Button className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700">
+                  <Button variant="gradient" className="w-full mt-6">
                     Start Free Trial
                   </Button>
                 </Link>
               </CardContent>
-            </Card>
+            </PremiumCard>
 
             {/* Enterprise Plan */}
-            <Card className="bg-gray-900/50 border-gray-800 hover:border-gray-700 transition-all duration-300">
-              <CardContent className="p-8">
-                <h3 className="text-2xl font-bold text-white mb-2">Enterprise</h3>
-                <div className="mb-6">
-                  <span className="text-4xl font-bold text-white">$99</span>
-                  <span className="text-gray-400">/month</span>
+            <PremiumCard>
+              <CardHeader>
+                <CardTitle>Enterprise</CardTitle>
+                <div className="mt-4">
+                  <span className="text-4xl font-bold">$99</span>
+                  <span className="text-muted-foreground">/month</span>
                 </div>
-                <ul className="space-y-3 mb-8">
-                  <li className="flex items-center gap-2 text-gray-300">
-                    <CheckCircle2 className="h-5 w-5 text-emerald-400" />
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <ul className="space-y-3">
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="h-5 w-5 text-success flex-shrink-0" />
                     <span>Everything in Professional</span>
                   </li>
-                  <li className="flex items-center gap-2 text-gray-300">
-                    <CheckCircle2 className="h-5 w-5 text-emerald-400" />
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="h-5 w-5 text-success flex-shrink-0" />
                     <span>Portfolio Optimization</span>
                   </li>
-                  <li className="flex items-center gap-2 text-gray-300">
-                    <CheckCircle2 className="h-5 w-5 text-emerald-400" />
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="h-5 w-5 text-success flex-shrink-0" />
                     <span>Advanced Alerts</span>
                   </li>
-                  <li className="flex items-center gap-2 text-gray-300">
-                    <CheckCircle2 className="h-5 w-5 text-emerald-400" />
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="h-5 w-5 text-success flex-shrink-0" />
                     <span>API Access</span>
                   </li>
-                  <li className="flex items-center gap-2 text-gray-300">
-                    <CheckCircle2 className="h-5 w-5 text-emerald-400" />
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="h-5 w-5 text-success flex-shrink-0" />
                     <span>Dedicated Support</span>
                   </li>
                 </ul>
                 <Link href="/register">
-                  <Button variant="outline" className="w-full border-gray-700 hover:bg-gray-800">
+                  <Button variant="outline" className="w-full mt-6">
                     Contact Sales
                   </Button>
                 </Link>
               </CardContent>
-            </Card>
+            </PremiumCard>
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials Section */}
+      <section id="testimonials" className="py-20 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl sm:text-5xl font-bold mb-4">
+              Trusted by Muslim Investors Worldwide
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              See what our users have to say about their experience
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <PremiumCard className="shine">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-12 h-12 bg-gradient-primary rounded-full flex items-center justify-center text-primary-foreground font-bold">
+                    AK
+                  </div>
+                  <div>
+                    <div className="font-semibold">Ahmed Khan</div>
+                    <div className="text-sm text-muted-foreground">Portfolio: $125K</div>
+                  </div>
+                </div>
+                <p className="text-muted-foreground italic">
+                  "Finally, a platform that respects both my financial goals and religious values. The AI insights are incredibly accurate!"
+                </p>
+              </CardContent>
+            </PremiumCard>
+
+            <PremiumCard className="shine">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-12 h-12 bg-gradient-success rounded-full flex items-center justify-center text-white font-bold">
+                    FH
+                  </div>
+                  <div>
+                    <div className="font-semibold">Fatima Hassan</div>
+                    <div className="text-sm text-muted-foreground">Portfolio: $89K</div>
+                  </div>
+                </div>
+                <p className="text-muted-foreground italic">
+                  "The Shariah compliance screening saves me hours of research. I can invest with confidence knowing everything is halal."
+                </p>
+              </CardContent>
+            </PremiumCard>
+
+            <PremiumCard className="shine">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-chart-4 to-chart-3 rounded-full flex items-center justify-center text-white font-bold">
+                    YA
+                  </div>
+                  <div>
+                    <div className="font-semibold">Yusuf Ali</div>
+                    <div className="text-sm text-muted-foreground">Portfolio: $210K</div>
+                  </div>
+                </div>
+                <p className="text-muted-foreground italic">
+                  "Best investment tool I've used. The technical indicators and alerts help me time my trades perfectly."
+                </p>
+              </CardContent>
+            </PremiumCard>
           </div>
         </div>
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-emerald-900/20 to-purple-900/20">
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-primary/10 to-chart-2/10">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-4xl sm:text-5xl font-bold mb-6">
-            <span className="bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
-              Ready to Start Investing Smarter?
-            </span>
+            Ready to Start Investing Smarter?
           </h2>
-          <p className="text-xl text-gray-400 mb-8">
+          <p className="text-xl text-muted-foreground mb-8">
             Join thousands of Muslim investors making informed, halal investment decisions
           </p>
           <Link href="/register">
-            <Button size="lg" className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white px-8 py-6 text-lg">
+            <Button variant="gradient" size="lg" className="px-8 h-14 text-lg">
               Start Your Free Trial
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
@@ -400,62 +538,101 @@ export default async function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-950 border-t border-gray-800 py-12 px-4 sm:px-6 lg:px-8">
+      <footer className="border-t border-border py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
             <div>
               <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-lg flex items-center justify-center">
-                  <TrendingUp className="h-5 w-5 text-white" />
+                <div className="w-10 h-10 bg-gradient-primary rounded-xl flex items-center justify-center shadow-premium">
+                  <TrendingUp className="h-6 w-6 text-primary-foreground" />
                 </div>
-                <span className="text-lg font-bold text-white">AlphaTrader AI</span>
+                <span className="text-lg font-bold">AlphaTrader AI</span>
               </div>
-              <p className="text-sm text-gray-400">
+              <p className="text-sm text-muted-foreground">
                 Empowering Muslim investors with AI-driven, Shariah-compliant stock analysis.
               </p>
             </div>
 
             <div>
-              <h4 className="text-sm font-semibold text-white mb-4">Product</h4>
+              <h4 className="text-sm font-semibold mb-4">Product</h4>
               <ul className="space-y-2">
-                <li><a href="#features" className="text-sm text-gray-400 hover:text-white transition-colors">Features</a></li>
-                <li><a href="#pricing" className="text-sm text-gray-400 hover:text-white transition-colors">Pricing</a></li>
-                <li><Link href="/scanner" className="text-sm text-gray-400 hover:text-white transition-colors">Stock Scanner</Link></li>
-                <li><Link href="/screener" className="text-sm text-gray-400 hover:text-white transition-colors">Screener</Link></li>
+                <li>
+                  <a href="#features" className="text-sm text-muted-foreground hover:text-foreground transition-smooth">
+                    Features
+                  </a>
+                </li>
+                <li>
+                  <a href="#pricing" className="text-sm text-muted-foreground hover:text-foreground transition-smooth">
+                    Pricing
+                  </a>
+                </li>
+                <li>
+                  <Link href="/scanner" className="text-sm text-muted-foreground hover:text-foreground transition-smooth">
+                    Stock Scanner
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/screener" className="text-sm text-muted-foreground hover:text-foreground transition-smooth">
+                    Screener
+                  </Link>
+                </li>
               </ul>
             </div>
 
             <div>
-              <h4 className="text-sm font-semibold text-white mb-4">Company</h4>
+              <h4 className="text-sm font-semibold mb-4">Company</h4>
               <ul className="space-y-2">
-                <li><a href="#about" className="text-sm text-gray-400 hover:text-white transition-colors">About Us</a></li>
-                <li><a href="/terms" className="text-sm text-gray-400 hover:text-white transition-colors">Terms of Service</a></li>
-                <li><a href="/privacy" className="text-sm text-gray-400 hover:text-white transition-colors">Privacy Policy</a></li>
-                <li><a href="/contact" className="text-sm text-gray-400 hover:text-white transition-colors">Contact</a></li>
+                <li>
+                  <a href="#testimonials" className="text-sm text-muted-foreground hover:text-foreground transition-smooth">
+                    Testimonials
+                  </a>
+                </li>
+                <li>
+                  <Link href="/terms" className="text-sm text-muted-foreground hover:text-foreground transition-smooth">
+                    Terms of Service
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/privacy" className="text-sm text-muted-foreground hover:text-foreground transition-smooth">
+                    Privacy Policy
+                  </Link>
+                </li>
               </ul>
             </div>
 
             <div>
-              <h4 className="text-sm font-semibold text-white mb-4">Connect</h4>
+              <h4 className="text-sm font-semibold mb-4">Connect</h4>
               <div className="flex gap-3">
-                <a href="#" className="p-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors">
-                  <Twitter className="h-5 w-5 text-gray-400" />
+                <a
+                  href="#"
+                  className="p-2 glass rounded-lg hover:bg-muted transition-smooth"
+                  aria-label="Twitter"
+                >
+                  <Twitter className="h-5 w-5" />
                 </a>
-                <a href="#" className="p-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors">
-                  <Linkedin className="h-5 w-5 text-gray-400" />
+                <a
+                  href="#"
+                  className="p-2 glass rounded-lg hover:bg-muted transition-smooth"
+                  aria-label="LinkedIn"
+                >
+                  <Linkedin className="h-5 w-5" />
                 </a>
-                <a href="#" className="p-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors">
-                  <Github className="h-5 w-5 text-gray-400" />
+                <a
+                  href="#"
+                  className="p-2 glass rounded-lg hover:bg-muted transition-smooth"
+                  aria-label="GitHub"
+                >
+                  <Github className="h-5 w-5" />
                 </a>
               </div>
             </div>
           </div>
 
-          <div className="pt-8 border-t border-gray-800 text-center">
-            <p className="text-sm text-gray-400">
+          <div className="pt-8 border-t border-border text-center">
+            <p className="text-sm text-muted-foreground">
               © {new Date().getFullYear()} AlphaTrader AI. All rights reserved.
             </p>
-            <p className="text-xs text-gray-500 mt-2">
+            <p className="text-xs text-muted-foreground mt-2">
               Investment involves risk. Past performance is not indicative of future results.
             </p>
           </div>
