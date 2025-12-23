@@ -41,7 +41,7 @@ export default async function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-2">
-              <div className="w-10 h-10 bg-gradient-primary rounded-xl flex items-center justify-center shadow-premium">
+              <div className="w-10 h-10 bg-gradient-primary rounded-xl flex items-center justify-center shadow-lg">
                 <TrendingUp className="h-6 w-6 text-primary-foreground" />
               </div>
               <span className="text-xl font-bold text-gradient">
@@ -92,7 +92,7 @@ export default async function LandingPage() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center relative z-10">
             {/* Badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-2 glass rounded-full mb-8 fade-in shadow-premium">
+            <div className="inline-flex items-center gap-2 px-4 py-2 glass rounded-full mb-8 fade-in shadow-lg">
               <Sparkles className="h-4 w-4 text-primary" />
               <span className="text-sm font-medium">AI-Powered Islamic Stock Analysis</span>
             </div>
@@ -131,7 +131,7 @@ export default async function LandingPage() {
                 <PremiumCard variant="glass" className="group">
                   <CardContent className="p-6">
                     <div className="flex items-center gap-3 mb-4">
-                      <div className="p-3 bg-gradient-success rounded-xl shadow-premium">
+                      <div className="p-3 bg-gradient-success rounded-xl shadow-lg">
                         <ShieldCheck className="h-6 w-6 text-white" />
                       </div>
                       <span className="text-sm font-semibold text-success">Shariah Compliant</span>
@@ -172,7 +172,7 @@ export default async function LandingPage() {
                 <PremiumCard variant="glass" className="group">
                   <CardContent className="p-6">
                     <div className="flex items-center gap-3 mb-4">
-                      <div className="p-3 bg-gradient-to-br from-chart-4 to-chart-3 rounded-xl shadow-premium">
+                      <div className="p-3 bg-gradient-to-br from-chart-4 to-chart-3 rounded-xl shadow-lg">
                         <LineChart className="h-6 w-6 text-white" />
                       </div>
                       <span className="text-sm font-semibold text-chart-4">Technical</span>
@@ -233,7 +233,7 @@ export default async function LandingPage() {
             {/* Feature 1 */}
             <PremiumCard className="group">
               <CardContent className="p-6">
-                <div className="w-12 h-12 bg-gradient-success rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-premium">
+                <div className="w-12 h-12 bg-gradient-success rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg">
                   <ShieldCheck className="h-6 w-6 text-white" />
                 </div>
                 <h3 className="text-xl font-bold mb-2">Shariah Compliance Screening</h3>
@@ -246,7 +246,7 @@ export default async function LandingPage() {
             {/* Feature 2 */}
             <PremiumCard className="group">
               <CardContent className="p-6">
-                <div className="w-12 h-12 bg-gradient-primary rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-premium">
+                <div className="w-12 h-12 bg-gradient-primary rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg">
                   <Brain className="h-6 w-6 text-white" />
                 </div>
                 <h3 className="text-xl font-bold mb-2">AI-Powered Insights</h3>
@@ -259,7 +259,7 @@ export default async function LandingPage() {
             {/* Feature 3 */}
             <PremiumCard className="group">
               <CardContent className="p-6">
-                <div className="w-12 h-12 bg-gradient-to-br from-chart-4 to-chart-3 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-premium">
+                <div className="w-12 h-12 bg-gradient-to-br from-chart-4 to-chart-3 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg">
                   <LineChart className="h-6 w-6 text-white" />
                 </div>
                 <h3 className="text-xl font-bold mb-2">13 Technical Indicators</h3>
@@ -272,7 +272,7 @@ export default async function LandingPage() {
             {/* Feature 4 */}
             <PremiumCard className="group">
               <CardContent className="p-6">
-                <div className="w-12 h-12 bg-gradient-to-br from-chart-5 to-chart-2 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-premium">
+                <div className="w-12 h-12 bg-gradient-to-br from-chart-5 to-chart-2 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg">
                   <BarChart3 className="h-6 w-6 text-white" />
                 </div>
                 <h3 className="text-xl font-bold mb-2">Real-Time Charts</h3>
@@ -285,7 +285,7 @@ export default async function LandingPage() {
             {/* Feature 5 */}
             <PremiumCard className="group">
               <CardContent className="p-6">
-                <div className="w-12 h-12 bg-gradient-danger rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-premium">
+                <div className="w-12 h-12 bg-gradient-danger rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg">
                   <Bell className="h-6 w-6 text-white" />
                 </div>
                 <h3 className="text-xl font-bold mb-2">Smart Alerts</h3>
@@ -298,7 +298,7 @@ export default async function LandingPage() {
             {/* Feature 6 */}
             <PremiumCard className="group">
               <CardContent className="p-6">
-                <div className="w-12 h-12 bg-gradient-primary rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-premium">
+                <div className="w-12 h-12 bg-gradient-primary rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg">
                   <Zap className="h-6 w-6 text-white" />
                 </div>
                 <h3 className="text-xl font-bold mb-2">Portfolio Optimization</h3>
@@ -367,7 +367,7 @@ export default async function LandingPage() {
             {/* Pro Plan */}
             <PremiumCard variant="glow" className="relative border-2 border-primary">
               <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-                <div className="bg-gradient-primary text-primary-foreground text-xs font-bold px-4 py-1 rounded-full shadow-premium">
+                <div className="bg-gradient-primary text-primary-foreground text-xs font-bold px-4 py-1 rounded-full shadow-lg">
                   MOST POPULAR
                 </div>
               </div>
@@ -543,7 +543,7 @@ export default async function LandingPage() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
             <div>
               <div className="flex items-center gap-2 mb-4">
-                <div className="w-10 h-10 bg-gradient-primary rounded-xl flex items-center justify-center shadow-premium">
+                <div className="w-10 h-10 bg-gradient-primary rounded-xl flex items-center justify-center shadow-lg">
                   <TrendingUp className="h-6 w-6 text-primary-foreground" />
                 </div>
                 <span className="text-lg font-bold">AlphaTrader AI</span>
