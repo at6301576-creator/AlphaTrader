@@ -276,11 +276,11 @@
 
   /* Card enhancements */
   .card-premium {
-    @apply bg-card border border-border rounded-xl shadow-premium transition-all duration-300;
+    @apply bg-card border border-border rounded-xl shadow-lg transition-all duration-300;
   }
 
   .card-premium:hover {
-    @apply shadow-premium-lg border-primary/20;
+    @apply shadow-2xl border-primary/20;
   }
 
   /* Smooth transitions */
@@ -387,7 +387,7 @@
 
   /* Chart tooltips */
   .chart-tooltip {
-    @apply glass rounded-lg p-3 shadow-premium border border-border/50;
+    @apply glass rounded-lg p-3 shadow-lg border border-border/50;
   }
 
   /* Input focus ring enhancement */
