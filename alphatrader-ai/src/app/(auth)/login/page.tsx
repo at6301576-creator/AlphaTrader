@@ -32,13 +32,13 @@ export default function LoginPage() {
 
       if (result?.error) {
         setError("Invalid email or password");
+        setIsLoading(false);
       } else {
+        // Keep loading state while redirecting for better UX
         router.push("/dashboard");
-        router.refresh();
       }
     } catch {
       setError("An error occurred. Please try again.");
-    } finally {
       setIsLoading(false);
     }
   };
@@ -56,13 +56,13 @@ export default function LoginPage() {
 
       if (result?.error) {
         setError("Demo login failed. Please try again.");
+        setIsLoading(false);
       } else {
+        // Keep loading state while redirecting for better UX
         router.push("/dashboard");
-        router.refresh();
       }
     } catch {
       setError("An error occurred. Please try again.");
-    } finally {
       setIsLoading(false);
     }
   };
