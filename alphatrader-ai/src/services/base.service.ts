@@ -81,7 +81,7 @@ export abstract class BaseService {
    * Parses JSON field with type safety (handles both Prisma Json type and string)
    */
   protected parseJsonField<T>(
-    jsonData: string | object | null | undefined,
+    jsonData: any,
     defaultValue: T,
     fieldName: string = "field"
   ): T {
