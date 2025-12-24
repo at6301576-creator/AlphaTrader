@@ -187,15 +187,16 @@ export function Header({ user, onMobileMenuToggle }: HeaderProps) {
 
         {/* Search and actions */}
         <div className="flex items-center gap-4">
-          {/* Search */}
-          <form onSubmit={handleSearch} className="relative hidden md:block">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          {/* Search - More prominent */}
+          <form onSubmit={handleSearch} className="relative md:block">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-emerald-500" />
             <Input
               type="text"
-              placeholder="Search stocks (e.g., AAPL)"
+              placeholder="Search any stock (e.g., AAPL, TSLA)"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-64 pl-9 bg-secondary border-border text-foreground placeholder:text-muted-foreground focus:ring-emerald-500"
+              className="w-48 md:w-72 pl-10 h-10 bg-secondary/50 border-2 border-emerald-500/30 hover:border-emerald-500/50 focus:border-emerald-500 text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-emerald-500/20 transition-all"
+              autoComplete="off"
             />
           </form>
 

@@ -77,7 +77,12 @@ export default function ScannerPage() {
         console.error("Failed to persist scanner results:", err);
       }
 
-      toast.success(`Found ${data.results.length} opportunities!`);
+      // Show different message if from cache
+      if (data.cached) {
+        toast.success(`Found ${data.results.length} opportunities! (from cache)`);
+      } else {
+        toast.success(`Found ${data.results.length} opportunities!`);
+      }
     } catch (err) {
       setError("Failed to complete scan. Please try again.");
       toast.error("Scan failed");

@@ -5,6 +5,14 @@ import { scanMarket } from "@/services/market-scanner";
 import type { ScannerFilters } from "@/types/scanner";
 import { createSecureErrorResponse, createSecureResponse, rateLimit } from "@/lib/security";
 
+// Simple in-memory cache for scan results (5 minute TTL)
+const scanCache = new Map<string, { results: any; timestamp: number }>();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+function getCacheKey(filters: ScannerFilters): string {
+  return JSON.stringify(filters);
+}
+
 export async function POST(request: NextRequest) {
   try {
     const session = await auth();
@@ -28,9 +36,32 @@ export async function POST(request: NextRequest) {
     const filters: ScannerFilters = await request.json();
     console.log("🔍 Starting scan with filters:", filters);
 
+    // Check cache first
+    const cacheKey = getCacheKey(filters);
+    const cached = scanCache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+      console.log("✅ Returning cached scan results");
+      return createSecureResponse({
+        results: cached.results,
+        totalCount: cached.results.length,
+        cached: true,
+      });
+    }
+
     // Run the scan
     const results = await scanMarket(filters);
     console.log(`✅ Scan complete! Found ${results.length} results`);
+
+    // Cache the results
+    scanCache.set(cacheKey, { results, timestamp: Date.now() });
+
+    // Clean old cache entries (keep only last 20)
+    if (scanCache.size > 20) {
+      const entries = Array.from(scanCache.entries());
+      entries.sort((a, b) => b[1].timestamp - a[1].timestamp);
+      scanCache.clear();
+      entries.slice(0, 20).forEach(([key, value]) => scanCache.set(key, value));
+    }
 
     // Save scan to history
     await prisma.scanHistory.create({
