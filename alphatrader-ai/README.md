@@ -86,13 +86,13 @@ npm install
 
 ### 3. Set up environment variables
 
-Copy `.env.example` to `.env`:
+Copy `.env.example` to `.env.local`:
 
 ```bash
-cp .env.example .env
+cp .env.example .env.local
 ```
 
-Then edit `.env` with your API keys:
+Then edit `.env.local` with your API keys:
 
 ```env
 # Database
