@@ -181,7 +181,9 @@ export default function ScreenerPage() {
 
   const handleLoadPreset = (preset: ScreenerPreset) => {
     try {
-      const parsedFilters = JSON.parse(preset.filters);
+      const parsedFilters = typeof preset.filters === 'string'
+        ? JSON.parse(preset.filters)
+        : preset.filters;
       setFilters(parsedFilters);
     } catch (error) {
       console.error("Error loading preset:", error);

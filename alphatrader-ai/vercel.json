@@ -5,24 +5,12 @@
   "framework": "nextjs",
   "crons": [
     {
-      "path": "/api/cron/warm-cache",
-      "schedule": "*/5 * * * *"
-    },
-    {
-      "path": "/api/cron/check-alerts",
-      "schedule": "*/15 * * * *"
-    },
-    {
-      "path": "/api/cron/technical-alerts",
-      "schedule": "*/15 * * * *"
-    },
-    {
       "path": "/api/cron/snapshot",
-      "schedule": "0 0 * * *"
+      "schedule": "0 21 * * 1-5"
     },
     {
       "path": "/api/cron/cleanup",
-      "schedule": "0 2 * * *"
+      "schedule": "0 0 * * *"
     }
   ]
 }

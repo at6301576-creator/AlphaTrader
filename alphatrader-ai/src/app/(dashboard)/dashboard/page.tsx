@@ -142,7 +142,9 @@ async function getDashboardData(userId: string) {
 
     for (const watchlist of watchlists.slice(0, 3)) {
       try {
-        const symbolsArray = JSON.parse(watchlist.symbols);
+        const symbolsArray = typeof watchlist.symbols === 'string'
+          ? JSON.parse(watchlist.symbols)
+          : watchlist.symbols;
         if (Array.isArray(symbolsArray) && symbolsArray.length > 0) {
           const watchlistQuotes = await getQuotes(symbolsArray.slice(0, 5));
           watchlistQuotes.forEach((quote) => {
@@ -225,7 +227,9 @@ async function getDashboardData(userId: string) {
         count: watchlists.length,
         totalStocks: watchlists.reduce((sum, w) => {
           try {
-            const symbols = JSON.parse(w.symbols);
+            const symbols = typeof w.symbols === 'string'
+              ? JSON.parse(w.symbols)
+              : w.symbols;
             return sum + (Array.isArray(symbols) ? symbols.length : 0);
           } catch {
             return sum;

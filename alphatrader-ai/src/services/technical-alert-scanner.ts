@@ -84,13 +84,20 @@ async function fetchChartData(symbol: string): Promise<ChartDataPoint[]> {
 }
 
 /**
+ * Helper to parse JSON parameters
+ */
+function parseJsonField<T>(field: any): T {
+  return typeof field === 'string' ? JSON.parse(field) : field;
+}
+
+/**
  * Check RSI alert condition
  */
 function checkRSIAlert(
   alert: any,
   chartData: ChartDataPoint[]
 ): ScanResult {
-  const params = JSON.parse(alert.parameters) as RSIParameters;
+  const params = parseJsonField<RSIParameters>(alert.parameters);
   const period = params.period || 14;
   const overboughtLevel = params.overboughtLevel || 70;
   const oversoldLevel = params.oversoldLevel || 30;
@@ -130,7 +137,7 @@ function checkMACDAlert(
   alert: any,
   chartData: ChartDataPoint[]
 ): ScanResult {
-  const params = JSON.parse(alert.parameters) as MACDParameters;
+  const params = parseJsonField<MACDParameters>(alert.parameters);
   const fastPeriod = params.fastPeriod || 12;
   const slowPeriod = params.slowPeriod || 26;
   const signalPeriod = params.signalPeriod || 9;
@@ -191,7 +198,7 @@ function checkStochasticAlert(
   alert: any,
   chartData: ChartDataPoint[]
 ): ScanResult {
-  const params = JSON.parse(alert.parameters) as StochasticParameters;
+  const params = parseJsonField<StochasticParameters>(alert.parameters);
   const kPeriod = params.kPeriod || 14;
   const dPeriod = params.dPeriod || 3;
   const overboughtLevel = params.overboughtLevel || 80;
@@ -249,7 +256,7 @@ function checkMACrossoverAlert(
   alert: any,
   chartData: ChartDataPoint[]
 ): ScanResult {
-  const params = JSON.parse(alert.parameters) as MACrossoverParameters;
+  const params = parseJsonField<MACrossoverParameters>(alert.parameters);
   const fastPeriod = params.fastPeriod;
   const slowPeriod = params.slowPeriod;
   const type = params.type;
@@ -312,7 +319,7 @@ function checkBollingerBandsAlert(
   alert: any,
   chartData: ChartDataPoint[]
 ): ScanResult {
-  const params = JSON.parse(alert.parameters) as BollingerBandsParameters;
+  const params = parseJsonField<BollingerBandsParameters>(alert.parameters);
   const period = params.period || 20;
   const stdDev = params.stdDev || 2;
 
