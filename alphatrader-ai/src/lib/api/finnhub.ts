@@ -63,29 +63,24 @@ async function getCached(key: string): Promise<any | null> {
           peRatio: true,
           sector: true,
           industry: true,
-          updatedAt: true,
         },
       });
 
-      if (dbCache) {
-        // Check if cache is fresh (within 1 hour)
-        const age = Date.now() - dbCache.updatedAt.getTime();
-        if (age < 60 * 60 * 1000) {
-          const stockData = {
-            symbol: dbCache.symbol,
-            name: dbCache.name,
-            currentPrice: dbCache.currentPrice,
-            previousClose: dbCache.previousClose,
-            marketCap: dbCache.marketCap,
-            peRatio: dbCache.peRatio,
-            sector: dbCache.sector,
-            industry: dbCache.industry,
-          };
-          // Warm up memory and Redis cache
-          memoryCache.set(key, { data: stockData, timestamp: Date.now() });
-          void setRedisCache(redisKey, stockData, CACHE_TTL.STOCK_QUOTE);
-          return stockData;
-        }
+      if (dbCache && dbCache.currentPrice) {
+        const stockData = {
+          symbol: dbCache.symbol,
+          name: dbCache.name,
+          currentPrice: dbCache.currentPrice,
+          previousClose: dbCache.previousClose,
+          marketCap: dbCache.marketCap,
+          peRatio: dbCache.peRatio,
+          sector: dbCache.sector,
+          industry: dbCache.industry,
+        };
+        // Warm up memory and Redis cache
+        memoryCache.set(key, { data: stockData, timestamp: Date.now() });
+        void setRedisCache(redisKey, stockData, CACHE_TTL.STOCK_QUOTE);
+        return stockData;
       }
     } catch (error) {
       // Silently fail - database cache is optional
@@ -121,7 +116,6 @@ async function setCache(key: string, data: any): Promise<void> {
             peRatio: data.peRatio,
             sector: data.sector,
             industry: data.industry,
-            updatedAt: new Date(),
           },
           create: {
             symbol: data.symbol,
