@@ -268,81 +268,120 @@ function scoreStock(
 function scoreUndervalued(stock: Stock, signals: ScanSignal[]): { score: number; signals: ScanSignal[] } {
   let score = 0;
 
-  // Low P/E ratio
+  // Give base score for having valid price data
+  if (stock.currentPrice && stock.currentPrice > 0) {
+    score += 5; // Base score
+  }
+
+  // Low P/E ratio (more lenient thresholds)
   if (stock.peRatio && stock.peRatio > 0) {
-    if (stock.peRatio < 10) {
+    if (stock.peRatio < 15) {
       score += 30;
       signals.push({
         type: "positive",
         category: "valuation",
-        message: `Very low P/E ratio of ${stock.peRatio.toFixed(1)}`,
+        message: `Low P/E ratio of ${stock.peRatio.toFixed(1)}`,
         weight: 30,
       });
-    } else if (stock.peRatio < 15) {
+    } else if (stock.peRatio < 20) {
       score += 20;
       signals.push({
         type: "positive",
         category: "valuation",
-        message: `Low P/E ratio of ${stock.peRatio.toFixed(1)}`,
+        message: `Reasonable P/E ratio of ${stock.peRatio.toFixed(1)}`,
         weight: 20,
       });
-    } else if (stock.peRatio > 30) {
-      score -= 10;
+    } else if (stock.peRatio > 40) {
+      score -= 5;
       signals.push({
         type: "negative",
         category: "valuation",
         message: `High P/E ratio of ${stock.peRatio.toFixed(1)}`,
-        weight: -10,
+        weight: -5,
       });
     }
   }
 
-  // Low P/B ratio
+  // Low P/B ratio (more lenient)
   if (stock.pbRatio && stock.pbRatio > 0) {
-    if (stock.pbRatio < 1) {
+    if (stock.pbRatio < 1.5) {
       score += 25;
       signals.push({
         type: "positive",
         category: "valuation",
-        message: `Trading below book value (P/B: ${stock.pbRatio.toFixed(2)})`,
+        message: `Low P/B ratio of ${stock.pbRatio.toFixed(2)}`,
         weight: 25,
       });
-    } else if (stock.pbRatio < 2) {
+    } else if (stock.pbRatio < 3) {
       score += 15;
       signals.push({
         type: "positive",
         category: "valuation",
-        message: `Low P/B ratio of ${stock.pbRatio.toFixed(2)}`,
+        message: `Reasonable P/B ratio of ${stock.pbRatio.toFixed(2)}`,
         weight: 15,
       });
     }
   }
 
-  // Near 52-week low
+  // Near 52-week low (more lenient)
   if (stock.currentPrice && stock.week52Low && stock.week52High) {
     const range = stock.week52High - stock.week52Low;
-    const positionInRange = (stock.currentPrice - stock.week52Low) / range;
+    if (range > 0) {
+      const positionInRange = (stock.currentPrice - stock.week52Low) / range;
 
-    if (positionInRange < 0.2) {
-      score += 15;
-      signals.push({
-        type: "positive",
-        category: "valuation",
-        message: "Near 52-week low - potential value opportunity",
-        weight: 15,
-      });
+      if (positionInRange < 0.3) {
+        score += 20;
+        signals.push({
+          type: "positive",
+          category: "valuation",
+          message: "Near 52-week low - value opportunity",
+          weight: 20,
+        });
+      } else if (positionInRange < 0.5) {
+        score += 10;
+        signals.push({
+          type: "positive",
+          category: "valuation",
+          message: "Below mid-range",
+          weight: 10,
+        });
+      }
     }
   }
 
   // Has dividend
-  if (stock.dividendYield && stock.dividendYield > 2) {
-    score += 10;
-    signals.push({
-      type: "positive",
-      category: "valuation",
-      message: `Dividend yield of ${stock.dividendYield.toFixed(1)}%`,
-      weight: 10,
-    });
+  if (stock.dividendYield && stock.dividendYield > 0) {
+    if (stock.dividendYield > 3) {
+      score += 15;
+      signals.push({
+        type: "positive",
+        category: "valuation",
+        message: `Strong dividend yield of ${stock.dividendYield.toFixed(1)}%`,
+        weight: 15,
+      });
+    } else if (stock.dividendYield > 1) {
+      score += 10;
+      signals.push({
+        type: "positive",
+        category: "valuation",
+        message: `Dividend yield of ${stock.dividendYield.toFixed(1)}%`,
+        weight: 10,
+      });
+    }
+  }
+
+  // Price decline (potential value)
+  if (stock.currentPrice && stock.previousClose && stock.previousClose > 0) {
+    const change = ((stock.currentPrice - stock.previousClose) / stock.previousClose) * 100;
+    if (change < -3) {
+      score += 15;
+      signals.push({
+        type: "positive",
+        category: "valuation",
+        message: `Recent decline of ${Math.abs(change).toFixed(1)}% - potential value`,
+        weight: 15,
+      });
+    }
   }
 
   return { score, signals };
