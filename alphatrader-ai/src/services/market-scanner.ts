@@ -113,58 +113,82 @@ export async function scanMarket(filters: ScannerFilters): Promise<ScanResult[]>
 
   console.log(`  Successfully fetched ${stocks.length} stocks from Finnhub`);
 
-  // Filter and score stocks
+  // OPTIMIZED: Parallel batch processing with controlled concurrency
   const results: ScanResult[] = [];
-  const processingPromises = stocks.map(async (stockData) => {
-    try {
-      // Skip if stock data is null/undefined or doesn't have required data
-      if (!stockData || !stockData.symbol) return null;
+  const BATCH_SIZE = 50; // Process 50 stocks at a time
+  const MAX_CONCURRENT = 5; // Maximum concurrent batches
 
-      const stock = stockData as Stock;
+  // Process stocks in batches to avoid overwhelming the system
+  for (let i = 0; i < stocks.length; i += BATCH_SIZE * MAX_CONCURRENT) {
+    const batchPromises: Promise<ScanResult | null>[] = [];
 
-      // Apply country/market filter
-      if (!passesMarketFilter(stock, filters.markets)) return null;
+    // Create up to MAX_CONCURRENT batches
+    for (let j = 0; j < MAX_CONCURRENT; j++) {
+      const batchStart = i + (j * BATCH_SIZE);
+      if (batchStart >= stocks.length) break;
 
-      // Apply basic filters
-      if (!passesBasicFilters(stock, filters)) return null;
+      const batch = stocks.slice(batchStart, batchStart + BATCH_SIZE);
 
-      // Check Shariah compliance for all stocks
-      const isShariahCompliant = quickShariahCheck(stock.sector || undefined, stock.industry || undefined);
-      stock.isShariahCompliant = isShariahCompliant;
+      // Process each batch in parallel
+      const batchResults = batch.map(async (stockData) => {
+        try {
+          // Skip if stock data is null/undefined or doesn't have required data
+          if (!stockData || !stockData.symbol) return null;
 
-      // Apply Shariah filter if enabled
-      if (filters.shariahCompliantOnly && !isShariahCompliant) {
-        return null;
-      }
+          const stock = stockData as Stock;
 
-      // Score based on scan type or sector (crypto mining)
-      let scoreResult;
-      if (filters.sectors.includes("Cryptocurrency Mining")) {
-        scoreResult = scoreCryptoMining(stock, stockData, []);
-      } else {
-        scoreResult = scoreStock(stock, stockData, filters.scanType);
-      }
-      const { score, signals } = scoreResult;
+          // Apply country/market filter
+          if (!passesMarketFilter(stock, filters.markets)) return null;
 
-      // Only include stocks with positive scores
-      if (score > 0) {
-        return {
-          stock,
-          score,
-          signals,
-          recommendation: getRecommendation(score),
-          reasonSummary: generateReasonSummary(signals),
-        };
-      }
-      return null;
-    } catch (error) {
-      console.error(`Error processing ${stockData.symbol}:`, error);
-      return null;
+          // Apply basic filters
+          if (!passesBasicFilters(stock, filters)) return null;
+
+          // Check Shariah compliance for all stocks
+          const isShariahCompliant = quickShariahCheck(stock.sector || undefined, stock.industry || undefined);
+          stock.isShariahCompliant = isShariahCompliant;
+
+          // Apply Shariah filter if enabled
+          if (filters.shariahCompliantOnly && !isShariahCompliant) {
+            return null;
+          }
+
+          // Score based on scan type or sector (crypto mining)
+          let scoreResult;
+          if (filters.sectors.includes("Cryptocurrency Mining")) {
+            scoreResult = scoreCryptoMining(stock, stockData, []);
+          } else {
+            scoreResult = scoreStock(stock, stockData, filters.scanType);
+          }
+          const { score, signals } = scoreResult;
+
+          // Only include stocks with positive scores
+          if (score > 0) {
+            return {
+              stock,
+              score,
+              signals,
+              recommendation: getRecommendation(score),
+              reasonSummary: generateReasonSummary(signals),
+            };
+          }
+          return null;
+        } catch (error) {
+          console.error(`Error processing ${stockData.symbol}:`, error);
+          return null;
+        }
+      });
+
+      batchPromises.push(...batchResults);
     }
-  });
 
-  const processedResults = await Promise.all(processingPromises);
-  results.push(...processedResults.filter((r): r is ScanResult => r !== null));
+    // Wait for all batches in this group to complete
+    const batchResults = await Promise.all(batchPromises);
+    results.push(...batchResults.filter((r): r is ScanResult => r !== null));
+
+    // Log progress
+    const progress = Math.min(100, Math.round(((i + BATCH_SIZE * MAX_CONCURRENT) / stocks.length) * 100));
+    console.log(`  ⚡ Progress: ${progress}% (${results.length} results found)`);
+  }
 
   // Sort by score (descending)
   results.sort((a, b) => b.score - a.score);
@@ -174,10 +198,10 @@ export async function scanMarket(filters: ScannerFilters): Promise<ScanResult[]>
   console.log(`  📋 Shariah compliance: ${compliantCount}/${results.length} stocks are compliant`);
 
   const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(2);
-  console.log(`  ⚡ Scan completed in ${elapsedTime}s`);
+  console.log(`  ⚡ Scan completed in ${elapsedTime}s - Found ${results.length} results`);
 
-  // Return top 50 results
-  return results.slice(0, 50);
+  // Return ALL results (no limit)
+  return results;
 }
 
 function passesBasicFilters(stock: Stock, filters: ScannerFilters): boolean {
