@@ -118,8 +118,9 @@ export default function PortfolioPage() {
     try {
       const response = await fetch("/api/portfolio");
       if (response.ok) {
-        const data = await response.json();
-        setPortfolio(data);
+        const result = await response.json();
+        // API returns { data: portfolio }, so extract the portfolio data
+        setPortfolio(result.data || result);
       }
     } catch (error) {
       console.error("Error fetching portfolio:", error);
