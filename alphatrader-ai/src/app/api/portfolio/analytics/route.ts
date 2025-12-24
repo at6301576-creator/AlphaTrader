@@ -84,14 +84,18 @@ export async function GET(request: NextRequest) {
     // Fetch current prices
     const symbols = portfolioItems.map((h) => h.symbol);
     const quotes = await getQuotes(symbols);
-    const quoteMap = new Map(quotes.map((q) => [q.symbol, q]));
+    const quoteMap = new Map(
+      quotes && Array.isArray(quotes) ? quotes.map((q) => [q.symbol, q]) : []
+    );
 
     // Fetch sector information
     const stockCacheData = await prisma.stockCache.findMany({
       where: { symbol: { in: symbols } },
       select: { symbol: true, sector: true },
     });
-    const sectorMap = new Map(stockCacheData.map((s) => [s.symbol, s.sector]));
+    const sectorMap = new Map(
+      stockCacheData && Array.isArray(stockCacheData) ? stockCacheData.map((s) => [s.symbol, s.sector]) : []
+    );
 
     // Calculate current portfolio metrics
     let totalValue = 0;
@@ -300,14 +304,18 @@ export async function POST() {
     // Fetch current prices
     const symbols = portfolioItems.map((h) => h.symbol);
     const quotes = await getQuotes(symbols);
-    const quoteMap = new Map(quotes.map((q) => [q.symbol, q]));
+    const quoteMap = new Map(
+      quotes && Array.isArray(quotes) ? quotes.map((q) => [q.symbol, q]) : []
+    );
 
     // Fetch sector information
     const stockCacheData = await prisma.stockCache.findMany({
       where: { symbol: { in: symbols } },
       select: { symbol: true, sector: true },
     });
-    const sectorMap = new Map(stockCacheData.map((s) => [s.symbol, s.sector]));
+    const sectorMap = new Map(
+      stockCacheData && Array.isArray(stockCacheData) ? stockCacheData.map((s) => [s.symbol, s.sector]) : []
+    );
 
     // Calculate metrics
     let totalValue = 0;
