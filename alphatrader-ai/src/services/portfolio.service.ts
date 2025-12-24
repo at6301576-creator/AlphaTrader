@@ -90,9 +90,11 @@ export class PortfolioService extends BaseService {
       "Failed to fetch current market prices"
     );
 
-    // Create quote lookup map
+    // Create quote lookup map - handle case where quotes might be null/undefined
     const quoteMap = new Map<string, QuoteResult>();
-    quotes.forEach((q) => quoteMap.set(q.symbol, q));
+    if (quotes && Array.isArray(quotes)) {
+      quotes.forEach((q) => quoteMap.set(q.symbol, q));
+    }
 
     // Fetch sector information
     const stockCacheData = await this.handleDatabaseOperation(
@@ -105,7 +107,9 @@ export class PortfolioService extends BaseService {
     );
 
     const sectorMap = new Map<string, string | null>();
-    stockCacheData.forEach((s) => sectorMap.set(s.symbol, s.sector));
+    if (stockCacheData && Array.isArray(stockCacheData)) {
+      stockCacheData.forEach((s) => sectorMap.set(s.symbol, s.sector));
+    }
 
     // Calculate portfolio metrics
     return this.calculatePortfolioMetrics(portfolioItems, quoteMap, sectorMap);
