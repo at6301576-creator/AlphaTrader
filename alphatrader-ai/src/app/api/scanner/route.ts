@@ -5,12 +5,32 @@ import { scanMarket } from "@/services/market-scanner";
 import type { ScannerFilters } from "@/types/scanner";
 import { createSecureErrorResponse, createSecureResponse, rateLimit } from "@/lib/security";
 
-// Simple in-memory cache for scan results (5 minute TTL)
+// Enhanced caching system with multiple TTLs
 const scanCache = new Map<string, { results: any; timestamp: number }>();
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const CACHE_TTL = 10 * 60 * 1000; // 10 minutes (increased from 5)
+const MAX_CACHE_SIZE = 50; // Increased from 20
+
+// Separate cache for frequently used scans (longer TTL)
+const frequentScanCache = new Map<string, { results: any; timestamp: number; hitCount: number }>();
+const FREQUENT_SCAN_TTL = 30 * 60 * 1000; // 30 minutes for popular scans
 
 function getCacheKey(filters: ScannerFilters): string {
-  return JSON.stringify(filters);
+  // Create consistent cache key regardless of property order
+  const normalized = {
+    scanType: filters.scanType,
+    markets: (filters.markets || []).sort(),
+    sectors: (filters.sectors || []).sort(),
+    shariahCompliantOnly: filters.shariahCompliantOnly || false,
+    minPrice: filters.minPrice,
+    maxPrice: filters.maxPrice,
+    minMarketCap: filters.minMarketCap,
+    maxMarketCap: filters.maxMarketCap,
+  };
+  return JSON.stringify(normalized);
+}
+
+function isCacheValid(cached: { timestamp: number; hitCount?: number }, ttl: number): boolean {
+  return Date.now() - cached.timestamp < ttl;
 }
 
 export async function POST(request: NextRequest) {
@@ -36,15 +56,40 @@ export async function POST(request: NextRequest) {
     const filters: ScannerFilters = await request.json();
     console.log("🔍 Starting scan with filters:", filters);
 
-    // Check cache first
+    // Enhanced multi-tier caching
     const cacheKey = getCacheKey(filters);
+
+    // Check frequent scan cache first (longer TTL)
+    const frequentCached = frequentScanCache.get(cacheKey);
+    if (frequentCached && isCacheValid(frequentCached, FREQUENT_SCAN_TTL)) {
+      frequentCached.hitCount++;
+      console.log(`✅ Returning frequent scan cache (${frequentCached.hitCount} hits)`);
+      return createSecureResponse({
+        results: frequentCached.results,
+        totalCount: frequentCached.results.length,
+        cached: true,
+        cacheType: 'frequent',
+      });
+    }
+
+    // Check regular cache
     const cached = scanCache.get(cacheKey);
-    if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    if (cached && isCacheValid(cached, CACHE_TTL)) {
       console.log("✅ Returning cached scan results");
+      // Promote to frequent cache if accessed multiple times
+      const hitCount = (cached as any).hitCount || 1;
+      (cached as any).hitCount = hitCount + 1;
+
+      if (hitCount >= 3) {
+        frequentScanCache.set(cacheKey, { ...cached, hitCount });
+        console.log("  📌 Promoted to frequent scan cache");
+      }
+
       return createSecureResponse({
         results: cached.results,
         totalCount: cached.results.length,
         cached: true,
+        cacheType: 'standard',
       });
     }
 
@@ -52,15 +97,31 @@ export async function POST(request: NextRequest) {
     const results = await scanMarket(filters);
     console.log(`✅ Scan complete! Found ${results.length} results`);
 
-    // Cache the results
-    scanCache.set(cacheKey, { results, timestamp: Date.now() });
+    // Cache the results with initial hit count
+    const cacheEntry = { results, timestamp: Date.now(), hitCount: 1 };
+    scanCache.set(cacheKey, cacheEntry as any);
 
-    // Clean old cache entries (keep only last 20)
-    if (scanCache.size > 20) {
+    // Intelligent cache cleanup - keep most recent and most accessed
+    if (scanCache.size > MAX_CACHE_SIZE) {
       const entries = Array.from(scanCache.entries());
-      entries.sort((a, b) => b[1].timestamp - a[1].timestamp);
+      // Sort by recency and access count
+      entries.sort((a, b) => {
+        const scoreA = b[1].timestamp + ((b[1] as any).hitCount || 0) * 60000; // Each hit = 1 min freshness
+        const scoreB = a[1].timestamp + ((a[1] as any).hitCount || 0) * 60000;
+        return scoreB - scoreA;
+      });
       scanCache.clear();
-      entries.slice(0, 20).forEach(([key, value]) => scanCache.set(key, value));
+      entries.slice(0, MAX_CACHE_SIZE).forEach(([key, value]) => scanCache.set(key, value));
+      console.log(`  🧹 Cache cleanup: kept top ${MAX_CACHE_SIZE} entries`);
+    }
+
+    // Clean frequent cache periodically (keep only top 10)
+    if (frequentScanCache.size > 10) {
+      const entries = Array.from(frequentScanCache.entries());
+      entries.sort((a, b) => b[1].hitCount - a[1].hitCount);
+      frequentScanCache.clear();
+      entries.slice(0, 10).forEach(([key, value]) => frequentScanCache.set(key, value));
+      console.log(`  🧹 Frequent cache cleanup: kept top 10 entries`);
     }
 
     // Save scan to history

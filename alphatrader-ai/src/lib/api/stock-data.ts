@@ -100,16 +100,16 @@ export async function getStocksForScanning(options: {
   }
 
   // Default: Get popular US stocks (PRODUCTION-OPTIMIZED for speed)
-  // OPTIMIZED: Limited to 100 stocks for sub-2-minute scan times
+  // OPTIMIZED: Limited to 60 stocks for sub-1-minute scan times
   // Balance between coverage and performance
   console.log(`  📊 Fetching popular stocks for markets: ${markets.join(', ')}...`);
   const allStocks = await finnhub.getAllUSStocks();
 
   // Get a diverse mix: liquid large caps and growth mid-caps
-  // REDUCED from 200 to 100 for faster scanning (2-3 min vs 5+ min)
+  // OPTIMIZED to 60 stocks for blazing fast scans (30-60 seconds)
   const popular = [
-    ...allStocks.filter(s => s.length >= 1 && s.length <= 4).slice(0, 75),
-    ...allStocks.filter(s => s.length === 5).slice(0, 25)
+    ...allStocks.filter(s => s.length >= 1 && s.length <= 4).slice(0, 45),
+    ...allStocks.filter(s => s.length === 5).slice(0, 15)
   ];
 
   console.log(`  ✅ Selected ${popular.length} popular stocks for fast scanning`);

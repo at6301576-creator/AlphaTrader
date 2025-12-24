@@ -26,7 +26,7 @@ interface CacheEntry {
 const memoryCache = new Map<string, CacheEntry>();
 const MEMORY_CACHE_TTL = 5 * 60 * 1000; // 5 minutes in memory
 
-// Hybrid cache getter: Check memory first, then Redis
+// Hybrid cache getter: Check memory first, then Redis, then database
 async function getCached(key: string): Promise<any | null> {
   // L1: Check in-memory cache first (instant)
   const memEntry = memoryCache.get(key);
@@ -47,10 +47,55 @@ async function getCached(key: string): Promise<any | null> {
     return redisData;
   }
 
+  // L3: Check database for stock cache (for stock:SYMBOL keys only)
+  if (key.startsWith('stock:')) {
+    try {
+      const symbol = key.replace('stock:', '');
+      const { prisma } = await import('@/lib/prisma');
+      const dbCache = await prisma.stockCache.findUnique({
+        where: { symbol },
+        select: {
+          symbol: true,
+          name: true,
+          currentPrice: true,
+          previousClose: true,
+          marketCap: true,
+          peRatio: true,
+          sector: true,
+          industry: true,
+          updatedAt: true,
+        },
+      });
+
+      if (dbCache) {
+        // Check if cache is fresh (within 1 hour)
+        const age = Date.now() - dbCache.updatedAt.getTime();
+        if (age < 60 * 60 * 1000) {
+          const stockData = {
+            symbol: dbCache.symbol,
+            name: dbCache.name,
+            currentPrice: dbCache.currentPrice,
+            previousClose: dbCache.previousClose,
+            marketCap: dbCache.marketCap,
+            peRatio: dbCache.peRatio,
+            sector: dbCache.sector,
+            industry: dbCache.industry,
+          };
+          // Warm up memory and Redis cache
+          memoryCache.set(key, { data: stockData, timestamp: Date.now() });
+          void setRedisCache(redisKey, stockData, CACHE_TTL.STOCK_QUOTE);
+          return stockData;
+        }
+      }
+    } catch (error) {
+      // Silently fail - database cache is optional
+    }
+  }
+
   return null;
 }
 
-// Hybrid cache setter: Write to both memory and Redis
+// Hybrid cache setter: Write to memory, Redis, and database
 async function setCache(key: string, data: any): Promise<void> {
   // L1: Write to memory cache
   memoryCache.set(key, { data, timestamp: Date.now() });
@@ -60,6 +105,40 @@ async function setCache(key: string, data: any): Promise<void> {
   setRedisCache(redisKey, data, CACHE_TTL.STOCK_QUOTE).catch(err =>
     console.error('[Cache] Redis write failed:', err)
   );
+
+  // L3: Write to database (for stock:SYMBOL keys only, async, non-blocking)
+  if (key.startsWith('stock:') && data.symbol) {
+    (async () => {
+      try {
+        const { prisma } = await import('@/lib/prisma');
+        await prisma.stockCache.upsert({
+          where: { symbol: data.symbol },
+          update: {
+            name: data.name,
+            currentPrice: data.currentPrice,
+            previousClose: data.previousClose,
+            marketCap: data.marketCap,
+            peRatio: data.peRatio,
+            sector: data.sector,
+            industry: data.industry,
+            updatedAt: new Date(),
+          },
+          create: {
+            symbol: data.symbol,
+            name: data.name,
+            currentPrice: data.currentPrice,
+            previousClose: data.previousClose,
+            marketCap: data.marketCap,
+            peRatio: data.peRatio,
+            sector: data.sector,
+            industry: data.industry,
+          },
+        });
+      } catch (error) {
+        // Silently fail - database cache is optional
+      }
+    })();
+  }
 }
 
 // Rate limiting - 60 calls per minute for free tier
