@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get unique symbols
-    const symbols = [...new Set(alerts.map((a) => a.symbol))];
+    const symbols = [...new Set(alerts.map((a) => a.symbol))] as string[];
     const quotes = await getQuotes(symbols);
 
     if (!quotes || quotes.length === 0) {

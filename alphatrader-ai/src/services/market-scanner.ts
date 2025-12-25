@@ -6,6 +6,14 @@ import {
 import { quickShariahCheck } from "./shariah-screener";
 import type { ScannerFilters, ScanResult, ScanSignal, ScanType, Market } from "@/types/scanner";
 import type { Stock } from "@/types/stock";
+import { batchFetchChartData } from "@/lib/api/technical-data";
+import {
+  calculateTechnicalIndicators,
+  detectVolumeSurge,
+  getRSISignal,
+  getMACDSignal,
+  getMASignal
+} from "@/lib/technical-calculator";
 
 // Market to index mapping
 const MARKET_INDICES: Record<Market, string> = {
@@ -166,7 +174,50 @@ export async function scanMarket(filters: ScannerFilters): Promise<ScanResult[]>
   const processedResults = await Promise.all(processingPromises);
   results.push(...processedResults.filter((r): r is ScanResult => r !== null));
 
-  // Sort by score (descending)
+  // Sort by fundamental score (descending)
+  results.sort((a, b) => b.score - a.score);
+
+  console.log(`  📊 Fundamental filtering complete: ${results.length} candidates`);
+
+  // ============================================================================
+  // PHASE 2: Technical Analysis on Top Candidates
+  // ============================================================================
+
+  // Take top 100 candidates for technical analysis (or all if less than 100)
+  const topCandidates = results.slice(0, 100);
+
+  if (topCandidates.length > 0) {
+    console.log(`  🔍 Fetching technical data for top ${topCandidates.length} candidates...`);
+
+    // Extract symbols
+    const symbols = topCandidates.map(r => r.stock.symbol);
+
+    // Batch fetch chart data (parallel with controlled concurrency)
+    const chartDataMap = await batchFetchChartData(symbols, 10);
+
+    console.log(`  📈 Chart data fetched for ${chartDataMap.size}/${symbols.length} stocks`);
+
+    // Calculate technical indicators and enhance scoring
+    for (const result of topCandidates) {
+      const chartData = chartDataMap.get(result.stock.symbol);
+
+      if (chartData && chartData.length > 0) {
+        // Calculate technical indicators
+        const technicalData = calculateTechnicalIndicators(chartData);
+        result.stock.technicalData = technicalData;
+
+        // Add technical scoring and signals
+        if (technicalData) {
+          const technicalBonus = addTechnicalScoring(result.stock, result.signals, filters.scanType);
+          result.score += technicalBonus;
+        }
+      }
+    }
+
+    console.log(`  ✅ Technical analysis complete`);
+  }
+
+  // Re-sort by final score (fundamental + technical)
   results.sort((a, b) => b.score - a.score);
 
   // Log Shariah compliance stats
@@ -1174,6 +1225,198 @@ function scoreCryptoMining(
 
 // Specialized scan for crypto mining stocks
 // Removed scanCryptoMining function - now uses Finnhub API search instead of hardcoded lists
+
+/**
+ * Add technical analysis scoring and signals to a stock
+ * Returns the technical score bonus/penalty to add to fundamental score
+ */
+function addTechnicalScoring(
+  stock: Stock,
+  signals: ScanSignal[],
+  scanType: ScanType
+): number {
+  let technicalScore = 0;
+
+  const technical = stock.technicalData;
+  if (!technical || !stock.currentPrice) return 0;
+
+  // ============================================================================
+  // RSI Analysis
+  // ============================================================================
+  if (technical.rsi !== null) {
+    const rsiSignal = getRSISignal(technical.rsi);
+
+    // RSI scoring varies by scan type
+    if (scanType === "undervalued" || scanType === "value" || scanType === "turnaround") {
+      // For value/undervalued scans, oversold RSI is positive
+      if (rsiSignal.type === "oversold") {
+        technicalScore += 15;
+        signals.push({
+          type: "positive",
+          category: "technical",
+          message: rsiSignal.message,
+          weight: 15,
+        });
+      } else if (rsiSignal.type === "overbought") {
+        technicalScore -= 5;
+        signals.push({
+          type: "negative",
+          category: "technical",
+          message: rsiSignal.message,
+          weight: -5,
+        });
+      }
+    } else if (scanType === "momentum" || scanType === "breakout" || scanType === "growth") {
+      // For momentum scans, strong RSI (50-70) is positive
+      if (technical.rsi >= 50 && technical.rsi <= 70) {
+        technicalScore += 15;
+        signals.push({
+          type: "positive",
+          category: "technical",
+          message: `Strong momentum RSI at ${technical.rsi.toFixed(1)}`,
+          weight: 15,
+        });
+      } else if (rsiSignal.type === "overbought") {
+        technicalScore -= 10;
+        signals.push({
+          type: "negative",
+          category: "technical",
+          message: rsiSignal.message,
+          weight: -10,
+        });
+      }
+    }
+  }
+
+  // ============================================================================
+  // MACD Analysis
+  // ============================================================================
+  if (technical.macd !== null) {
+    const macdSignal = getMACDSignal(technical.macd);
+
+    if (macdSignal.type === "bullish") {
+      technicalScore += 10;
+      signals.push({
+        type: "positive",
+        category: "technical",
+        message: macdSignal.message,
+        weight: 10,
+      });
+    } else if (macdSignal.type === "bearish") {
+      technicalScore -= 10;
+      signals.push({
+        type: "negative",
+        category: "technical",
+        message: macdSignal.message,
+        weight: -10,
+      });
+    }
+  }
+
+  // ============================================================================
+  // Moving Average Analysis
+  // ============================================================================
+  const maSignal = getMASignal(stock.currentPrice, technical.sma50, technical.sma200);
+
+  if (maSignal.type === "bullish") {
+    technicalScore += 12;
+    signals.push({
+      type: "positive",
+      category: "technical",
+      message: maSignal.message,
+      weight: 12,
+    });
+  } else if (maSignal.type === "bearish") {
+    technicalScore -= 8;
+    signals.push({
+      type: "negative",
+      category: "technical",
+      message: maSignal.message,
+      weight: -8,
+    });
+  }
+
+  // ============================================================================
+  // Volume Analysis
+  // ============================================================================
+  const volumeSurge = detectVolumeSurge(stock);
+  if (volumeSurge) {
+    if (scanType === "momentum" || scanType === "breakout") {
+      // High volume is very positive for momentum/breakout scans
+      technicalScore += 15;
+      signals.push({
+        type: "positive",
+        category: "technical",
+        message: "High volume surge detected - strong interest",
+        weight: 15,
+      });
+    } else {
+      // Moderate positive for other scan types
+      technicalScore += 8;
+      signals.push({
+        type: "positive",
+        category: "technical",
+        message: "Above-average volume",
+        weight: 8,
+      });
+    }
+  }
+
+  // ============================================================================
+  // Bollinger Bands Analysis
+  // ============================================================================
+  if (technical.bollingerBands !== null && stock.currentPrice !== null) {
+    const bb = technical.bollingerBands;
+    const price = stock.currentPrice;
+
+    if (scanType === "undervalued" || scanType === "value" || scanType === "turnaround") {
+      // Price near/below lower band is positive for value scans
+      if (price <= bb.lower * 1.02) {
+        technicalScore += 10;
+        signals.push({
+          type: "positive",
+          category: "technical",
+          message: "Price at/below lower Bollinger Band - potential reversal",
+          weight: 10,
+        });
+      }
+    } else if (scanType === "momentum" || scanType === "breakout") {
+      // Price near/above upper band is positive for momentum scans
+      if (price >= bb.upper * 0.98) {
+        technicalScore += 10;
+        signals.push({
+          type: "positive",
+          category: "technical",
+          message: "Price at/above upper Bollinger Band - strong momentum",
+          weight: 10,
+        });
+      }
+    }
+  }
+
+  // ============================================================================
+  // Overall Trend Signal
+  // ============================================================================
+  if (technical.trendSignal === "bullish") {
+    technicalScore += 8;
+    signals.push({
+      type: "positive",
+      category: "technical",
+      message: "Overall technical trend is bullish",
+      weight: 8,
+    });
+  } else if (technical.trendSignal === "bearish") {
+    technicalScore -= 8;
+    signals.push({
+      type: "negative",
+      category: "technical",
+      message: "Overall technical trend is bearish",
+      weight: -8,
+    });
+  }
+
+  return technicalScore;
+}
 
 function getRecommendation(score: number): ScanResult["recommendation"] {
   if (score >= 70) return "strong_buy";

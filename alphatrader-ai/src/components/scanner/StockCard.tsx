@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +14,10 @@ import {
   CheckCircle2,
   XCircle,
   Info,
+  ChevronDown,
+  ChevronUp,
+  Activity,
+  BarChart3,
 } from "lucide-react";
 import {
   Tooltip,
@@ -34,6 +39,7 @@ export function StockCard({
   onAddToPortfolio,
 }: StockCardProps) {
   const { stock, score, signals, recommendation, reasonSummary } = result;
+  const [showTechnicalDetails, setShowTechnicalDetails] = useState(false);
 
   const getRecommendationColor = (rec: string) => {
     switch (rec) {
@@ -160,6 +166,196 @@ export function StockCard({
             </p>
           </div>
         </div>
+
+        {/* Technical Indicators (4 key indicators) */}
+        {stock.technicalData && (
+          <div className="bg-gray-800/30 rounded-lg p-2.5 mb-3 border border-gray-700/50">
+            <div className="flex items-center gap-1.5 mb-2">
+              <Activity className="h-3.5 w-3.5 text-blue-400" />
+              <span className="text-xs font-medium text-blue-400">Technical</span>
+            </div>
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              {/* RSI */}
+              <div className="flex items-center justify-between">
+                <span className="text-gray-400">RSI:</span>
+                <Badge
+                  variant="outline"
+                  className={`text-xs ${
+                    stock.technicalData.rsi !== null
+                      ? stock.technicalData.rsi > 70
+                        ? "border-red-500 text-red-400"
+                        : stock.technicalData.rsi < 30
+                        ? "border-emerald-500 text-emerald-400"
+                        : "border-amber-500 text-amber-400"
+                      : "border-gray-600 text-gray-400"
+                  }`}
+                >
+                  {stock.technicalData.rsi !== null ? stock.technicalData.rsi.toFixed(1) : "N/A"}
+                </Badge>
+              </div>
+
+              {/* Trend (MA) */}
+              <div className="flex items-center justify-between">
+                <span className="text-gray-400">Trend:</span>
+                <span className="text-xs font-medium">
+                  {stock.currentPrice && stock.technicalData.sma50 !== null ? (
+                    stock.currentPrice > stock.technicalData.sma50 ? (
+                      <span className="text-emerald-400 flex items-center gap-0.5">
+                        <TrendingUp className="h-3 w-3" />
+                        Above MA
+                      </span>
+                    ) : (
+                      <span className="text-red-400 flex items-center gap-0.5">
+                        <TrendingDown className="h-3 w-3" />
+                        Below MA
+                      </span>
+                    )
+                  ) : (
+                    <span className="text-gray-500">N/A</span>
+                  )}
+                </span>
+              </div>
+
+              {/* MACD */}
+              <div className="flex items-center justify-between">
+                <span className="text-gray-400">MACD:</span>
+                <Badge
+                  variant="outline"
+                  className={`text-xs ${
+                    stock.technicalData.macd !== null
+                      ? stock.technicalData.macd.histogram > 0
+                        ? "border-emerald-500 text-emerald-400"
+                        : "border-red-500 text-red-400"
+                      : "border-gray-600 text-gray-400"
+                  }`}
+                >
+                  {stock.technicalData.macd !== null
+                    ? stock.technicalData.macd.histogram > 0
+                      ? "Bullish"
+                      : "Bearish"
+                    : "N/A"}
+                </Badge>
+              </div>
+
+              {/* Volume */}
+              <div className="flex items-center justify-between">
+                <span className="text-gray-400">Volume:</span>
+                <span className="text-xs font-medium">
+                  {stock.volume && stock.avgVolume && stock.volume >= stock.avgVolume * 1.5 ? (
+                    <span className="text-amber-400 flex items-center gap-0.5">
+                      <BarChart3 className="h-3 w-3" />
+                      High
+                    </span>
+                  ) : (
+                    <span className="text-gray-500">Normal</span>
+                  )}
+                </span>
+              </div>
+            </div>
+
+            {/* Toggle for detailed technical view */}
+            <button
+              onClick={() => setShowTechnicalDetails(!showTechnicalDetails)}
+              className="w-full flex items-center justify-center gap-1 mt-2 pt-2 border-t border-gray-700/50 text-xs text-gray-400 hover:text-blue-400 transition-colors"
+            >
+              {showTechnicalDetails ? (
+                <>
+                  <ChevronUp className="h-3 w-3" />
+                  Hide Details
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="h-3 w-3" />
+                  Show Details
+                </>
+              )}
+            </button>
+          </div>
+        )}
+
+        {/* Expanded Technical Details */}
+        {showTechnicalDetails && stock.technicalData && (
+          <div className="bg-gray-800/40 rounded-lg p-3 mb-3 border border-gray-700/50 text-xs space-y-2">
+            <div className="grid grid-cols-2 gap-2">
+              {/* Moving Averages */}
+              <div>
+                <p className="text-gray-500 mb-1">Moving Averages</p>
+                <div className="space-y-1">
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">SMA 50:</span>
+                    <span className="text-gray-200">
+                      {stock.technicalData.sma50 !== null ? formatPrice(stock.technicalData.sma50) : "N/A"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">SMA 200:</span>
+                    <span className="text-gray-200">
+                      {stock.technicalData.sma200 !== null ? formatPrice(stock.technicalData.sma200) : "N/A"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Bollinger Bands */}
+              <div>
+                <p className="text-gray-500 mb-1">Bollinger Bands</p>
+                <div className="space-y-1">
+                  {stock.technicalData.bollingerBands !== null ? (
+                    <>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Upper:</span>
+                        <span className="text-gray-200">
+                          {formatPrice(stock.technicalData.bollingerBands.upper)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Lower:</span>
+                        <span className="text-gray-200">
+                          {formatPrice(stock.technicalData.bollingerBands.lower)}
+                        </span>
+                      </div>
+                    </>
+                  ) : (
+                    <span className="text-gray-500">N/A</span>
+                  )}
+                </div>
+              </div>
+
+              {/* Technical Signals */}
+              <div>
+                <p className="text-gray-500 mb-1">Overall Signal</p>
+                <Badge
+                  className={`text-xs ${
+                    stock.technicalData.overallSignal === "strong_buy" || stock.technicalData.overallSignal === "buy"
+                      ? "bg-emerald-600"
+                      : stock.technicalData.overallSignal === "sell" || stock.technicalData.overallSignal === "strong_sell"
+                      ? "bg-red-600"
+                      : "bg-amber-600"
+                  }`}
+                >
+                  {stock.technicalData.overallSignal.replace("_", " ").toUpperCase()}
+                </Badge>
+              </div>
+
+              {/* Trend */}
+              <div>
+                <p className="text-gray-500 mb-1">Trend Direction</p>
+                <Badge
+                  variant="outline"
+                  className={`text-xs ${
+                    stock.technicalData.trendSignal === "bullish"
+                      ? "border-emerald-500 text-emerald-400"
+                      : stock.technicalData.trendSignal === "bearish"
+                      ? "border-red-500 text-red-400"
+                      : "border-gray-500 text-gray-400"
+                  }`}
+                >
+                  {stock.technicalData.trendSignal.toUpperCase()}
+                </Badge>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Score */}
         <div className="flex items-center gap-2 mb-3">
