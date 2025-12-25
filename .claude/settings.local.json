@@ -45,7 +45,9 @@
       "Bash(more:*)",
       "Bash(if exist .nextcache rmdir /s /q .nextcache)",
       "Bash(timeout 180 npm run build)",
-      "Bash(timeout:*)"
+      "Bash(timeout:*)",
+      "Bash(find:*)",
+      "Bash(set NEXT_BUILD_MODE=webpack:*)"
     ],
     "deny": [],
     "ask": []
