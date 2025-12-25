@@ -58,11 +58,17 @@ export default function WatchlistPage() {
 
   const fetchWatchlists = async () => {
     try {
+      console.log("[Watchlist] Fetching watchlists...");
       const response = await fetch("/api/watchlist");
+      console.log("[Watchlist] Response status:", response.status);
+
       if (response.ok) {
         const data = await response.json();
+        console.log("[Watchlist] Received data:", data);
+
         // API returns { watchlists: [...] }, so extract the array
         const watchlistsArray = data.watchlists || [];
+        console.log("[Watchlist] Extracted array:", watchlistsArray);
         setWatchlists(watchlistsArray);
 
         // Fetch sparklines for all symbols
@@ -70,9 +76,12 @@ export default function WatchlistPage() {
         if (allSymbols.length > 0) {
           fetchSparklines(allSymbols);
         }
+      } else {
+        const errorData = await response.json();
+        console.error("[Watchlist] Failed to fetch:", response.status, errorData);
       }
     } catch (error) {
-      console.error("Error fetching watchlists:", error);
+      console.error("[Watchlist] Error fetching watchlists:", error);
     } finally {
       setLoading(false);
     }
@@ -99,24 +108,34 @@ export default function WatchlistPage() {
     if (!newWatchlist.name.trim()) return;
 
     try {
+      console.log("[Watchlist] Creating watchlist:", newWatchlist);
       const response = await fetch("/api/watchlist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newWatchlist),
       });
 
+      console.log("[Watchlist] Create response status:", response.status);
+
       if (response.ok) {
+        const result = await response.json();
+        console.log("[Watchlist] Create response:", result);
+
         setCreateDialogOpen(false);
         setNewWatchlist({ name: "", description: "" });
-        fetchWatchlists();
+
+        // Wait a moment then refresh
+        setTimeout(() => {
+          fetchWatchlists();
+        }, 100);
       } else {
         // Log error details for debugging
         const errorData = await response.json();
-        console.error("Failed to create watchlist:", response.status, errorData);
+        console.error("[Watchlist] Failed to create:", response.status, errorData);
         alert(`Failed to create watchlist: ${errorData.message || 'Unknown error'}`);
       }
     } catch (error) {
-      console.error("Error creating watchlist:", error);
+      console.error("[Watchlist] Error creating watchlist:", error);
       alert(`Error creating watchlist: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
