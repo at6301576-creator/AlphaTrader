@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import {
   TrendingUp,
   Radar,
@@ -20,6 +21,8 @@ import {
   ChevronRight,
   LineChart,
   Filter,
+  Menu,
+  X,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -53,6 +56,7 @@ interface SidebarProps {
 export function Sidebar({ user }: SidebarProps) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const [unreadAlerts, setUnreadAlerts] = useState(0);
 
   // Fetch triggered alerts count
@@ -83,7 +87,8 @@ export function Sidebar({ user }: SidebarProps) {
     signOut({ callbackUrl: "/" });
   };
 
-  return (
+  // Sidebar content component (reused for both desktop and mobile)
+  const SidebarContent = () => (
     <div
       className={cn(
         "relative flex flex-col h-screen bg-sidebar border-r border-sidebar-border transition-all duration-300",
@@ -190,5 +195,35 @@ export function Sidebar({ user }: SidebarProps) {
         </Button>
       </div>
     </div>
+  );
+
+  return (
+    <>
+      {/* Mobile: Hamburger menu button */}
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 flex items-center justify-between h-16 px-4 bg-sidebar border-b border-sidebar-border">
+        <Link href="/" className="flex items-center gap-2">
+          <TrendingUp className="h-8 w-8 text-emerald-500" />
+          <span className="text-xl font-bold text-sidebar-foreground">AlphaTrader</span>
+        </Link>
+
+        <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+          <SheetTrigger asChild>
+            <Button variant="ghost" size="icon" className="lg:hidden">
+              <Menu className="h-6 w-6" />
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" className="p-0 w-64">
+            <div onClick={() => setMobileOpen(false)}>
+              <SidebarContent />
+            </div>
+          </SheetContent>
+        </Sheet>
+      </div>
+
+      {/* Desktop: Regular sidebar */}
+      <div className="hidden lg:block">
+        <SidebarContent />
+      </div>
+    </>
   );
 }
