@@ -1,10 +1,12 @@
 /**
  * Technical Data Service
  * Fetches historical chart data for technical analysis calculations
- * Uses Yahoo Finance API (same as technical alert scanner)
+ * Primary: Yahoo Finance (fast, no limits)
+ * Fallback: Alpha Vantage (reliable, 500 req/day)
  */
 
 import yahooFinance from "yahoo-finance2";
+import { fetchDailyTimeSeries } from "./alpha-vantage";
 import type { ChartDataPoint } from "@/types/stock";
 import type { Time } from "lightweight-charts";
 
@@ -28,54 +30,77 @@ export async function fetchChartDataForTechnicalAnalysis(
     // Check cache first
     const cached = chartDataCache.get(symbol);
     if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+      console.log(`[TechnicalData] 💾 Cache hit: ${symbol}`);
       return cached.data;
     }
 
-    // Fetch 200 days of daily data (enough for 200-day MA)
-    const endDate = new Date();
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - 200);
+    // TRY PRIMARY: Yahoo Finance (fast, no API limits)
+    try {
+      // Fetch 200 days of daily data (enough for 200-day MA)
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - 200);
 
-    const result = (await yahooFinance.chart(symbol, {
-      period1: startDate,
-      period2: endDate,
-      interval: "1d",
-    })) as any;
+      const result = (await yahooFinance.chart(symbol, {
+        period1: startDate,
+        period2: endDate,
+        interval: "1d",
+      })) as any;
 
-    if (!result.quotes || result.quotes.length === 0) {
-      console.warn(`No chart data available for ${symbol}`);
-      return [];
+      if (result.quotes && result.quotes.length > 0) {
+        // Transform to ChartDataPoint format
+        const chartData: ChartDataPoint[] = result.quotes
+          .filter(
+            (quote: any) =>
+              quote.open !== null &&
+              quote.high !== null &&
+              quote.low !== null &&
+              quote.close !== null &&
+              quote.volume !== null &&
+              quote.date !== null
+          )
+          .map((quote: any) => ({
+            time: (quote.date!.getTime() / 1000) as Time,
+            open: quote.open!,
+            high: quote.high!,
+            low: quote.low!,
+            close: quote.close!,
+            volume: quote.volume!,
+          }));
+
+        // Cache the result
+        chartDataCache.set(symbol, {
+          data: chartData,
+          timestamp: Date.now(),
+        });
+
+        console.log(`[TechnicalData] ✅ Yahoo Finance: ${symbol} (${chartData.length} points)`);
+        return chartData;
+      }
+    } catch (yahooError) {
+      console.warn(`[TechnicalData] ⚠️  Yahoo Finance failed for ${symbol}:`, yahooError);
     }
 
-    // Transform to ChartDataPoint format
-    const chartData: ChartDataPoint[] = result.quotes
-      .filter(
-        (quote: any) =>
-          quote.open !== null &&
-          quote.high !== null &&
-          quote.low !== null &&
-          quote.close !== null &&
-          quote.volume !== null &&
-          quote.date !== null
-      )
-      .map((quote: any) => ({
-        time: (quote.date!.getTime() / 1000) as Time,
-        open: quote.open!,
-        high: quote.high!,
-        low: quote.low!,
-        close: quote.close!,
-        volume: quote.volume!,
-      }));
+    // FALLBACK: Alpha Vantage (reliable, 500 req/day limit)
+    console.log(`[TechnicalData] 🔄 Trying Alpha Vantage fallback for ${symbol}...`);
+    const alphaVantageData = await fetchDailyTimeSeries(symbol);
 
-    // Cache the result
-    chartDataCache.set(symbol, {
-      data: chartData,
-      timestamp: Date.now(),
-    });
+    if (alphaVantageData.length > 0) {
+      // Cache the fallback result
+      chartDataCache.set(symbol, {
+        data: alphaVantageData,
+        timestamp: Date.now(),
+      });
 
-    return chartData;
+      console.log(`[TechnicalData] ✅ Alpha Vantage: ${symbol} (${alphaVantageData.length} points)`);
+      return alphaVantageData;
+    }
+
+    // Both sources failed
+    console.error(`[TechnicalData] ❌ Both Yahoo Finance and Alpha Vantage failed for ${symbol}`);
+    return [];
   } catch (error) {
-    console.error(`Error fetching chart data for ${symbol}:`, error);
+    console.error(`[TechnicalData] Fatal error fetching chart data for ${symbol}:`, error);
     return [];
   }
 }
