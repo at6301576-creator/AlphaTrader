@@ -49,7 +49,7 @@ export class TechnicalAlertService extends BaseService {
       "Failed to fetch technical alerts"
     );
 
-    return alerts.map((alert) => this.mapAlertToResponse(alert));
+    return (alerts as any[]).map((alert) => this.mapAlertToResponse(alert));
   }
 
   /**
@@ -67,10 +67,11 @@ export class TechnicalAlertService extends BaseService {
       "Failed to fetch technical alert"
     );
 
-    this.assertExists(alert, "Technical alert not found");
-    this.assertOwnership(alert.userId, userId);
+    const alertTyped = alert as any;
+    this.assertExists(alertTyped, "Technical alert not found");
+    this.assertOwnership(alertTyped?.userId, userId);
 
-    return this.mapAlertToResponse(alert);
+    return this.mapAlertToResponse(alertTyped);
   }
 
   /**
@@ -144,8 +145,9 @@ export class TechnicalAlertService extends BaseService {
       "Failed to fetch technical alert"
     );
 
-    this.assertExists(alert, "Technical alert not found");
-    this.assertOwnership(alert.userId, userId);
+    const alertTyped = alert as any;
+    this.assertExists(alertTyped, "Technical alert not found");
+    this.assertOwnership(alertTyped?.userId, userId);
 
     // Validate cooldown minutes if provided
     if (updates.cooldownMinutes !== undefined) {
@@ -195,8 +197,9 @@ export class TechnicalAlertService extends BaseService {
       "Failed to fetch technical alert"
     );
 
-    this.assertExists(alert, "Technical alert not found");
-    this.assertOwnership(alert.userId, userId);
+    const alertTyped = alert as any;
+    this.assertExists(alertTyped, "Technical alert not found");
+    this.assertOwnership(alertTyped?.userId, userId);
 
     await this.handleDatabaseOperation(
       () =>

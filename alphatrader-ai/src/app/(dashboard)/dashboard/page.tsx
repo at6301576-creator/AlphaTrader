@@ -225,7 +225,7 @@ async function getDashboardData(userId: string) {
         count: watchlists.length,
         totalStocks: watchlists.reduce((sum, w) => {
           try {
-            const symbols = JSON.parse(w.symbols);
+            const symbols = JSON.parse(w.symbols as string);
             return sum + (Array.isArray(symbols) ? symbols.length : 0);
           } catch {
             return sum;

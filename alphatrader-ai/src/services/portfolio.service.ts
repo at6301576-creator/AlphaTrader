@@ -241,10 +241,10 @@ export class PortfolioService extends BaseService {
     const holding = await this.handleDatabaseOperation(
       () => this.prisma.portfolio.findUnique({ where: { id: holdingId } }),
       "Failed to fetch holding"
-    );
+    ) as any;
 
     this.assertExists(holding, "Holding not found");
-    this.assertOwnership(holding.userId, userId);
+    this.assertOwnership(holding?.userId, userId);
 
     return holding;
   }

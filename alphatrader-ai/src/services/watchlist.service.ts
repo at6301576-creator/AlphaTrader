@@ -51,7 +51,7 @@ export class WatchlistService extends BaseService {
 
     // Collect all unique symbols across all watchlists
     const allSymbols = new Set<string>();
-    watchlists.forEach((wl) => {
+    (watchlists as any[]).forEach((wl) => {
       const symbolsData = this.parseJsonField<WatchlistSymbol[]>(
         wl.symbols,
         [],
@@ -76,7 +76,7 @@ export class WatchlistService extends BaseService {
     quotes.forEach((q) => quoteMap.set(q.symbol, q));
 
     // Build response with stock data
-    return watchlists.map((wl) => {
+    return (watchlists as any[]).map((wl) => {
       const symbolsData = this.parseJsonField<(string | WatchlistSymbol)[]>(
         wl.symbols,
         [],
@@ -124,12 +124,13 @@ export class WatchlistService extends BaseService {
       "Failed to fetch watchlist"
     );
 
-    this.assertExists(watchlist, "Watchlist not found");
-    this.assertOwnership(watchlist.userId, userId);
+    const watchlistTyped = watchlist as any;
+    this.assertExists(watchlistTyped, "Watchlist not found");
+    this.assertOwnership(watchlistTyped?.userId, userId);
 
     // Fetch stock data
     const symbolsData = this.parseJsonField<(string | WatchlistSymbol)[]>(
-      watchlist.symbols,
+      watchlistTyped.symbols,
       [],
       "symbols"
     );
@@ -167,9 +168,9 @@ export class WatchlistService extends BaseService {
     });
 
     return {
-      id: watchlist.id,
-      name: watchlist.name,
-      description: watchlist.description,
+      id: watchlistTyped.id,
+      name: watchlistTyped.name,
+      description: watchlistTyped.description,
       stocks,
     };
   }
@@ -204,10 +205,11 @@ export class WatchlistService extends BaseService {
       "Failed to create watchlist"
     );
 
+    const watchlistTyped = watchlist as any;
     return {
-      id: watchlist.id,
-      name: watchlist.name,
-      description: watchlist.description,
+      id: watchlistTyped.id,
+      name: watchlistTyped.name,
+      description: watchlistTyped.description,
     };
   }
 
@@ -228,8 +230,9 @@ export class WatchlistService extends BaseService {
       "Failed to fetch watchlist"
     );
 
-    this.assertExists(watchlist, "Watchlist not found");
-    this.assertOwnership(watchlist.userId, userId);
+    const watchlistTyped = watchlist as any;
+    this.assertExists(watchlistTyped, "Watchlist not found");
+    this.assertOwnership(watchlistTyped?.userId, userId);
 
     // Validate name if provided
     if (updates.name !== undefined) {
@@ -271,8 +274,9 @@ export class WatchlistService extends BaseService {
       "Failed to fetch watchlist"
     );
 
-    this.assertExists(watchlist, "Watchlist not found");
-    this.assertOwnership(watchlist.userId, userId);
+    const watchlistTyped = watchlist as any;
+    this.assertExists(watchlistTyped, "Watchlist not found");
+    this.assertOwnership(watchlistTyped?.userId, userId);
 
     await this.handleDatabaseOperation(
       () =>
@@ -300,12 +304,13 @@ export class WatchlistService extends BaseService {
       "Failed to fetch watchlist"
     );
 
-    this.assertExists(watchlist, "Watchlist not found");
-    this.assertOwnership(watchlist.userId, userId);
+    const watchlistTyped = watchlist as any;
+    this.assertExists(watchlistTyped, "Watchlist not found");
+    this.assertOwnership(watchlistTyped?.userId, userId);
 
     // Parse current symbols
     const currentSymbols = this.parseJsonField<(string | WatchlistSymbol)[]>(
-      watchlist.symbols,
+      watchlistTyped.symbols,
       [],
       "symbols"
     );
@@ -352,12 +357,13 @@ export class WatchlistService extends BaseService {
       "Failed to fetch watchlist"
     );
 
-    this.assertExists(watchlist, "Watchlist not found");
-    this.assertOwnership(watchlist.userId, userId);
+    const watchlistTyped = watchlist as any;
+    this.assertExists(watchlistTyped, "Watchlist not found");
+    this.assertOwnership(watchlistTyped?.userId, userId);
 
     // Parse current symbols
     const currentSymbols = this.parseJsonField<(string | WatchlistSymbol)[]>(
-      watchlist.symbols,
+      watchlistTyped.symbols,
       [],
       "symbols"
     );
@@ -399,12 +405,13 @@ export class WatchlistService extends BaseService {
       "Failed to fetch watchlist"
     );
 
-    this.assertExists(watchlist, "Watchlist not found");
-    this.assertOwnership(watchlist.userId, userId);
+    const watchlistTyped = watchlist as any;
+    this.assertExists(watchlistTyped, "Watchlist not found");
+    this.assertOwnership(watchlistTyped?.userId, userId);
 
     // Parse current symbols
     const currentSymbols = this.parseJsonField<(string | WatchlistSymbol)[]>(
-      watchlist.symbols,
+      watchlistTyped.symbols,
       [],
       "symbols"
     );
