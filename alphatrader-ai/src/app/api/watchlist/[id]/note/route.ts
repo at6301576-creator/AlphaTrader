@@ -1,85 +1,47 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { watchlistService } from "@/services/watchlist.service";
+import {
+  createSuccessResponse,
+  createErrorResponse,
+  requireAuth,
+  ApiError,
+  ErrorCode,
+} from "@/lib/api-response";
 
 /**
- * Update note for a specific stock in a watchlist
  * PATCH /api/watchlist/[id]/note
+ * Update note for a specific stock in a watchlist
  */
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const { id } = await params;
-
   try {
+    const session = await auth();
+    requireAuth(session);
+
+    const { id: watchlistId } = await params;
     const body = await request.json();
     const { symbol, note } = body;
 
-    if (!symbol) {
-      return NextResponse.json(
-        { error: "Symbol is required" },
-        { status: 400 }
+    if (!symbol || typeof symbol !== "string" || symbol.trim() === "") {
+      throw new ApiError(
+        ErrorCode.VALIDATION_ERROR,
+        "Symbol is required",
+        400
       );
     }
 
-    // Get the watchlist
-    const watchlist = await prisma.watchlist.findFirst({
-      where: {
-        id,
-        userId: session.user.id,
-      },
-    });
-
-    if (!watchlist) {
-      return NextResponse.json(
-        { error: "Watchlist not found" },
-        { status: 404 }
-      );
-    }
-
-    // Parse symbols with notes
-    const symbolsData = JSON.parse(watchlist.symbols || "[]");
-
-    // Check if symbols is array of strings (old format) or array of objects (new format with notes)
-    let updatedSymbols;
-
-    if (symbolsData.length > 0 && typeof symbolsData[0] === "string") {
-      // Convert old format to new format
-      updatedSymbols = symbolsData.map((sym: string) => ({
-        symbol: sym,
-        note: sym === symbol ? note : undefined,
-      }));
-    } else {
-      // Already in new format, update the note
-      updatedSymbols = symbolsData.map((item: any) => {
-        if (item.symbol === symbol) {
-          return { ...item, note: note || undefined };
-        }
-        return item;
-      });
-    }
-
-    // Update the watchlist
-    await prisma.watchlist.update({
-      where: { id },
-      data: {
-        symbols: JSON.stringify(updatedSymbols),
-      },
-    });
-
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error("Error updating note:", error);
-    return NextResponse.json(
-      { error: "Failed to update note" },
-      { status: 500 }
+    await watchlistService.updateSymbolNote(
+      session.user!.id,
+      watchlistId,
+      symbol,
+      note || ""
     );
+
+    return createSuccessResponse({ message: "Note updated successfully" });
+  } catch (error) {
+    return createErrorResponse(error as Error);
   }
 }
