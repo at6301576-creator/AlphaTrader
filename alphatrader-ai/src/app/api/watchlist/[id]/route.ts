@@ -9,7 +9,7 @@ import {
 
 /**
  * GET /api/watchlist/[id]
- * Get a single watchlist by ID
+ * Fetch a single watchlist by ID with stock data (includes stocks)
  */
 export async function GET(
   request: NextRequest,
