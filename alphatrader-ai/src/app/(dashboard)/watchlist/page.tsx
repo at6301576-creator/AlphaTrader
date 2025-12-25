@@ -66,8 +66,8 @@ export default function WatchlistPage() {
         const data = await response.json();
         console.log("[Watchlist] Received data:", data);
 
-        // API returns { watchlists: [...] }, so extract the array
-        const watchlistsArray = data.watchlists || [];
+        // API returns { data: { watchlists: [...] }, meta: {...} }, so extract the array
+        const watchlistsArray = data.data?.watchlists || [];
         console.log("[Watchlist] Extracted array:", watchlistsArray);
         setWatchlists(watchlistsArray);
 
