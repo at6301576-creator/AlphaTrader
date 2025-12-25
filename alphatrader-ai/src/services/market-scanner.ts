@@ -187,34 +187,44 @@ export async function scanMarket(filters: ScannerFilters): Promise<ScanResult[]>
   const topCandidates = results.slice(0, 100);
 
   if (topCandidates.length > 0) {
-    console.log(`  🔍 Fetching technical data for top ${topCandidates.length} candidates...`);
+    try {
+      console.log(`  🔍 Fetching technical data for top ${topCandidates.length} candidates...`);
 
-    // Extract symbols
-    const symbols = topCandidates.map(r => r.stock.symbol);
+      // Extract symbols
+      const symbols = topCandidates.map(r => r.stock.symbol);
 
-    // Batch fetch chart data (parallel with controlled concurrency)
-    const chartDataMap = await batchFetchChartData(symbols, 10);
+      // Batch fetch chart data (parallel with controlled concurrency)
+      const chartDataMap = await batchFetchChartData(symbols, 10);
 
-    console.log(`  📈 Chart data fetched for ${chartDataMap.size}/${symbols.length} stocks`);
+      console.log(`  📈 Chart data fetched for ${chartDataMap.size}/${symbols.length} stocks`);
 
-    // Calculate technical indicators and enhance scoring
-    for (const result of topCandidates) {
-      const chartData = chartDataMap.get(result.stock.symbol);
+      // Calculate technical indicators and enhance scoring
+      for (const result of topCandidates) {
+        try {
+          const chartData = chartDataMap.get(result.stock.symbol);
 
-      if (chartData && chartData.length > 0) {
-        // Calculate technical indicators
-        const technicalData = calculateTechnicalIndicators(chartData);
-        result.stock.technicalData = technicalData;
+          if (chartData && chartData.length > 0) {
+            // Calculate technical indicators
+            const technicalData = calculateTechnicalIndicators(chartData);
+            result.stock.technicalData = technicalData;
 
-        // Add technical scoring and signals
-        if (technicalData) {
-          const technicalBonus = addTechnicalScoring(result.stock, result.signals, filters.scanType);
-          result.score += technicalBonus;
+            // Add technical scoring and signals
+            if (technicalData) {
+              const technicalBonus = addTechnicalScoring(result.stock, result.signals, filters.scanType);
+              result.score += technicalBonus;
+            }
+          }
+        } catch (error) {
+          console.error(`Error processing technical data for ${result.stock.symbol}:`, error);
+          // Continue with other stocks even if one fails
         }
       }
-    }
 
-    console.log(`  ✅ Technical analysis complete`);
+      console.log(`  ✅ Technical analysis complete`);
+    } catch (error) {
+      console.error(`⚠️  Technical analysis phase failed, continuing with fundamental results only:`, error);
+      // Don't throw - return fundamental results even if technical analysis fails
+    }
   }
 
   // Re-sort by final score (fundamental + technical)
