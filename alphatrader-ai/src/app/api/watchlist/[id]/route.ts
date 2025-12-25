@@ -1,90 +1,57 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { watchlistService } from "@/services/watchlist.service";
+import {
+  createSuccessResponse,
+  createErrorResponse,
+  requireAuth,
+} from "@/lib/api-response";
 
+/**
+ * DELETE /api/watchlist/[id]
+ * Delete a watchlist
+ */
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const { id: watchlistId } = await params;
-
   try {
-    // Verify the watchlist belongs to the user
-    const watchlist = await prisma.watchlist.findFirst({
-      where: {
-        id: watchlistId,
-        userId: session.user.id,
-      },
-    });
+    const session = await auth();
+    requireAuth(session);
 
-    if (!watchlist) {
-      return NextResponse.json({ error: "Watchlist not found" }, { status: 404 });
-    }
+    const { id: watchlistId } = await params;
 
-    // Delete the watchlist
-    await prisma.watchlist.delete({
-      where: { id: watchlistId },
-    });
+    await watchlistService.deleteWatchlist(session.user!.id, watchlistId);
 
-    return NextResponse.json({ success: true });
+    return createSuccessResponse({ message: "Watchlist deleted successfully" });
   } catch (error) {
-    console.error("Error deleting watchlist:", error);
-    return NextResponse.json(
-      { error: "Failed to delete watchlist" },
-      { status: 500 }
-    );
+    return createErrorResponse(error as Error);
   }
 }
 
+/**
+ * PATCH /api/watchlist/[id]
+ * Update a watchlist
+ */
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const { id: watchlistId } = await params;
-
   try {
+    const session = await auth();
+    requireAuth(session);
+
+    const { id: watchlistId } = await params;
     const body = await request.json();
     const { name, description } = body;
 
-    // Verify the watchlist belongs to the user
-    const watchlist = await prisma.watchlist.findFirst({
-      where: {
-        id: watchlistId,
-        userId: session.user.id,
-      },
+    await watchlistService.updateWatchlist(session.user!.id, watchlistId, {
+      name,
+      description,
     });
 
-    if (!watchlist) {
-      return NextResponse.json({ error: "Watchlist not found" }, { status: 404 });
-    }
-
-    // Update the watchlist
-    const updated = await prisma.watchlist.update({
-      where: { id: watchlistId },
-      data: {
-        name: name || watchlist.name,
-        description: description !== undefined ? description : watchlist.description,
-      },
-    });
-
-    return NextResponse.json(updated);
+    return createSuccessResponse({ message: "Watchlist updated successfully" });
   } catch (error) {
-    console.error("Error updating watchlist:", error);
-    return NextResponse.json(
-      { error: "Failed to update watchlist" },
-      { status: 500 }
-    );
+    return createErrorResponse(error as Error);
   }
 }
