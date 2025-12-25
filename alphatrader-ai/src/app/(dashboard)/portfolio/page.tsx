@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Plus, Trash2, TrendingUp, TrendingDown, DollarSign, BarChart3, RefreshCw, Edit, Sparkles, Loader2, Receipt, Camera } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { Plus, Trash2, TrendingUp, TrendingDown, DollarSign, BarChart3, RefreshCw, Edit, Sparkles, Loader2, Receipt, Camera, Activity } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -28,6 +28,8 @@ import {
 } from "@/components/ui/tabs";
 import Link from "next/link";
 import { PortfolioAnalytics } from "@/components/portfolio/PortfolioAnalytics";
+import { usePriceUpdates } from "@/hooks/usePriceUpdates";
+import { PriceDisplay } from "@/components/PriceDisplay";
 
 interface PortfolioHolding {
   id: string;
@@ -85,6 +87,58 @@ export default function PortfolioPage() {
     soldDate: "",
   });
   const [snapshotting, setSnapshotting] = useState(false);
+
+  // Get all symbols for real-time updates
+  const allSymbols = useMemo(() => {
+    return portfolio?.holdings.map(h => h.symbol) || [];
+  }, [portfolio]);
+
+  // Enable real-time price updates
+  const { prices: livePrices } = usePriceUpdates({
+    symbols: allSymbols,
+    interval: 10000, // Update every 10 seconds
+    enabled: true,
+  });
+
+  // Merge live prices with portfolio data
+  const portfolioWithLivePrices = useMemo(() => {
+    if (!portfolio) return null;
+
+    const updatedHoldings = portfolio.holdings.map(holding => {
+      const livePrice = livePrices.get(holding.symbol);
+      if (livePrice) {
+        const currentPrice = livePrice.currentPrice;
+        const value = holding.shares * currentPrice;
+        const gain = value - holding.costBasis;
+        const gainPercent = holding.costBasis > 0 ? (gain / holding.costBasis) * 100 : 0;
+
+        return {
+          ...holding,
+          currentPrice,
+          value,
+          gain,
+          gainPercent,
+          direction: livePrice.direction,
+        };
+      }
+      return holding;
+    });
+
+    // Recalculate totals
+    const totalValue = updatedHoldings.reduce((sum, h) => sum + h.value, 0);
+    const totalCost = updatedHoldings.reduce((sum, h) => sum + h.costBasis, 0);
+    const totalGain = totalValue - totalCost;
+    const totalGainPercent = totalCost > 0 ? (totalGain / totalCost) * 100 : 0;
+
+    return {
+      ...portfolio,
+      holdings: updatedHoldings,
+      totalValue,
+      totalCost,
+      totalGain,
+      totalGainPercent,
+    };
+  }, [portfolio, livePrices]);
 
   // Function to clean and format AI content (remove markdown)
   const formatAIContent = (content: string): string => {
@@ -406,7 +460,7 @@ export default function PortfolioPage() {
       </div>
 
       {/* Summary Cards */}
-      {portfolio && (
+      {portfolioWithLivePrices && (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card className="bg-card border-border">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -414,11 +468,19 @@ export default function PortfolioPage() {
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
-                ${portfolio.totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              <div className="flex items-center justify-between">
+                <div className="text-2xl font-bold">
+                  ${portfolioWithLivePrices.totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </div>
+                {allSymbols.length > 0 && (
+                  <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-green-900/20 border border-green-500/30">
+                    <Activity className="h-2 w-2 text-green-500 animate-pulse-live" />
+                    <span className="text-[10px] font-medium text-green-500">LIVE</span>
+                  </div>
+                )}
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                Cost basis: ${portfolio.totalCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                Cost basis: ${portfolioWithLivePrices.totalCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </p>
             </CardContent>
           </Card>
@@ -426,18 +488,18 @@ export default function PortfolioPage() {
           <Card className="bg-card border-border">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Total Gain/Loss</CardTitle>
-              {portfolio.totalGain >= 0 ? (
+              {portfolioWithLivePrices.totalGain >= 0 ? (
                 <TrendingUp className="h-4 w-4 text-green-500" />
               ) : (
                 <TrendingDown className="h-4 w-4 text-red-500" />
               )}
             </CardHeader>
             <CardContent>
-              <div className={`text-2xl font-bold ${portfolio.totalGain >= 0 ? "text-green-500" : "text-red-500"}`}>
-                {portfolio.totalGain >= 0 ? "+" : ""}${portfolio.totalGain.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              <div className={`text-2xl font-bold ${portfolioWithLivePrices.totalGain >= 0 ? "text-green-500" : "text-red-500"}`}>
+                {portfolioWithLivePrices.totalGain >= 0 ? "+" : ""}${portfolioWithLivePrices.totalGain.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </div>
-              <p className={`text-xs mt-1 ${portfolio.totalGainPercent >= 0 ? "text-green-500" : "text-red-500"}`}>
-                {portfolio.totalGainPercent >= 0 ? "+" : ""}{portfolio.totalGainPercent.toFixed(2)}%
+              <p className={`text-xs mt-1 ${portfolioWithLivePrices.totalGainPercent >= 0 ? "text-green-500" : "text-red-500"}`}>
+                {portfolioWithLivePrices.totalGainPercent >= 0 ? "+" : ""}{portfolioWithLivePrices.totalGainPercent.toFixed(2)}%
               </p>
             </CardContent>
           </Card>
@@ -448,11 +510,11 @@ export default function PortfolioPage() {
               <BarChart3 className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className={`text-2xl font-bold ${portfolio.dayChange >= 0 ? "text-green-500" : "text-red-500"}`}>
-                {portfolio.dayChange >= 0 ? "+" : ""}${portfolio.dayChange.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              <div className={`text-2xl font-bold ${portfolioWithLivePrices.dayChange >= 0 ? "text-green-500" : "text-red-500"}`}>
+                {portfolioWithLivePrices.dayChange >= 0 ? "+" : ""}${portfolioWithLivePrices.dayChange.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </div>
-              <p className={`text-xs mt-1 ${portfolio.dayChangePercent >= 0 ? "text-green-500" : "text-red-500"}`}>
-                {portfolio.dayChangePercent >= 0 ? "+" : ""}{portfolio.dayChangePercent.toFixed(2)}%
+              <p className={`text-xs mt-1 ${portfolioWithLivePrices.dayChangePercent >= 0 ? "text-green-500" : "text-red-500"}`}>
+                {portfolioWithLivePrices.dayChangePercent >= 0 ? "+" : ""}{portfolioWithLivePrices.dayChangePercent.toFixed(2)}%
               </p>
             </CardContent>
           </Card>
@@ -554,7 +616,7 @@ export default function PortfolioPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {portfolio.holdings.map((holding) => (
+                  {portfolioWithLivePrices.holdings.map((holding) => (
                     <tr key={holding.id} className="border-b border-border hover:bg-secondary/50">
                       <td className="py-4 px-4">
                         <div>

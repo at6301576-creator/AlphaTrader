@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Plus, Trash2, Star, TrendingUp, TrendingDown, Eye, Edit2, X, StickyNote } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { Plus, Trash2, Star, TrendingUp, TrendingDown, Eye, Edit2, X, StickyNote, Activity } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -16,6 +16,8 @@ import {
 } from "@/components/ui/dialog";
 import Link from "next/link";
 import { Sparkline } from "@/components/Sparkline";
+import { usePriceUpdates } from "@/hooks/usePriceUpdates";
+import { PriceDisplay } from "@/components/PriceDisplay";
 
 interface WatchlistStock {
   symbol: string;
@@ -51,6 +53,38 @@ export default function WatchlistPage() {
   const [sparklines, setSparklines] = useState<SparklineData>({});
   const [noteDialogOpen, setNoteDialogOpen] = useState(false);
   const [editingNote, setEditingNote] = useState<{ watchlistId: string; symbol: string; note: string } | null>(null);
+
+  // Get all symbols across all watchlists for real-time updates
+  const allSymbols = useMemo(() => {
+    return watchlists.flatMap(wl => wl.stocks.map(s => s.symbol));
+  }, [watchlists]);
+
+  // Enable real-time price updates
+  const { prices: livePrices } = usePriceUpdates({
+    symbols: allSymbols,
+    interval: 10000, // Update every 10 seconds
+    enabled: true,
+  });
+
+  // Merge live prices with watchlist data
+  const watchlistsWithLivePrices = useMemo(() => {
+    return watchlists.map(wl => ({
+      ...wl,
+      stocks: wl.stocks.map(stock => {
+        const livePrice = livePrices.get(stock.symbol);
+        if (livePrice) {
+          return {
+            ...stock,
+            currentPrice: livePrice.currentPrice,
+            change: livePrice.change,
+            changePercent: livePrice.changePercent,
+            direction: livePrice.direction,
+          };
+        }
+        return stock;
+      }),
+    }));
+  }, [watchlists, livePrices]);
 
   useEffect(() => {
     fetchWatchlists();
@@ -392,8 +426,16 @@ export default function WatchlistPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Watchlists</h1>
-          <p className="text-muted-foreground mt-1">Track stocks you're interested in</p>
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold">Watchlists</h1>
+            {allSymbols.length > 0 && (
+              <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-green-900/20 border border-green-500/30">
+                <Activity className="h-3 w-3 text-green-500 animate-pulse-live" />
+                <span className="text-xs font-medium text-green-500">LIVE</span>
+              </div>
+            )}
+          </div>
+          <p className="text-muted-foreground mt-1">Track stocks you're interested in with real-time updates</p>
         </div>
         <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
           <DialogTrigger asChild>
@@ -509,7 +551,7 @@ export default function WatchlistPage() {
         </Card>
       ) : (
         <div className="space-y-6">
-          {watchlists.map((watchlist) => (
+          {watchlistsWithLivePrices.map((watchlist) => (
             <Card key={watchlist.id} className="bg-card border-border">
               <CardHeader className="flex flex-row items-center justify-between">
                 <div>
@@ -592,20 +634,26 @@ export default function WatchlistPage() {
                                 )}
                               </div>
                             </td>
-                            <td className="text-right py-4 px-4 font-medium">
-                              ${stock.currentPrice.toFixed(2)}
+                            <td className="text-right py-4 px-4">
+                              <PriceDisplay
+                                price={stock.currentPrice}
+                                change={stock.change}
+                                changePercent={stock.changePercent}
+                                direction={(stock as any).direction}
+                                showChange={false}
+                                size="md"
+                              />
                             </td>
                             <td className="text-right py-4 px-4">
-                              <div className={`flex items-center justify-end gap-1 ${stock.change >= 0 ? "text-green-500" : "text-red-500"}`}>
-                                {stock.change >= 0 ? (
-                                  <TrendingUp className="h-4 w-4" />
-                                ) : (
-                                  <TrendingDown className="h-4 w-4" />
-                                )}
-                                <span>
-                                  {stock.change >= 0 ? "+" : ""}{stock.changePercent.toFixed(2)}%
-                                </span>
-                              </div>
+                              <PriceDisplay
+                                price={stock.currentPrice}
+                                change={stock.change}
+                                changePercent={stock.changePercent}
+                                direction={(stock as any).direction}
+                                showChange={true}
+                                size="sm"
+                                className="justify-end"
+                              />
                             </td>
                             <td className="text-right py-4 px-4 text-muted-foreground">
                               {formatNumber(stock.volume)}
