@@ -82,6 +82,9 @@ export const apiConfig = {
     process.env.NEXT_PUBLIC_FINNHUB_API_KEY ||
     "",
 
+  // Alpha Vantage API key (fallback for technical data)
+  alphaVantageApiKey: process.env.ALPHA_VANTAGE_API_KEY || "",
+
   // OpenAI API key
   openaiApiKey: process.env.OPENAI_API_KEY || "",
 
