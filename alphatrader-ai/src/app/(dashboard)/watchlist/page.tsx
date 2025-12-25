@@ -59,7 +59,13 @@ export default function WatchlistPage() {
   const fetchWatchlists = async () => {
     try {
       console.log("[Watchlist] Fetching watchlists...");
-      const response = await fetch("/api/watchlist");
+      const response = await fetch("/api/watchlist", {
+        cache: "no-store",
+        headers: {
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          "Pragma": "no-cache",
+        },
+      });
       console.log("[Watchlist] Response status:", response.status);
 
       if (response.ok) {
@@ -111,7 +117,11 @@ export default function WatchlistPage() {
       console.log("[Watchlist] Creating watchlist:", newWatchlist);
       const response = await fetch("/api/watchlist", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+        },
+        cache: "no-store",
         body: JSON.stringify(newWatchlist),
       });
 
@@ -145,6 +155,10 @@ export default function WatchlistPage() {
       console.log("[Watchlist] Deleting watchlist:", watchlistId);
       const response = await fetch(`/api/watchlist/${watchlistId}`, {
         method: "DELETE",
+        headers: {
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+        },
+        cache: "no-store",
       });
 
       console.log("[Watchlist] Delete response status:", response.status);
@@ -171,7 +185,11 @@ export default function WatchlistPage() {
       console.log("[Watchlist] Adding stock:", newSymbol, "to watchlist:", selectedWatchlist);
       const response = await fetch(`/api/watchlist/${selectedWatchlist}/symbols`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+        },
+        cache: "no-store",
         body: JSON.stringify({ symbol: newSymbol.toUpperCase() }),
       });
 
@@ -200,7 +218,11 @@ export default function WatchlistPage() {
       console.log("[Watchlist] Removing stock:", symbol, "from watchlist:", watchlistId);
       const response = await fetch(`/api/watchlist/${watchlistId}/symbols`, {
         method: "DELETE",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+        },
+        cache: "no-store",
         body: JSON.stringify({ symbol }),
       });
 
@@ -228,7 +250,11 @@ export default function WatchlistPage() {
       console.log("[Watchlist] Saving note for:", editingNote.symbol);
       const response = await fetch(`/api/watchlist/${editingNote.watchlistId}/note`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+        },
+        cache: "no-store",
         body: JSON.stringify({
           symbol: editingNote.symbol,
           note: editingNote.note,
@@ -261,7 +287,11 @@ export default function WatchlistPage() {
       console.log("[Watchlist] Deleting note for:", editingNote.symbol);
       const response = await fetch(`/api/watchlist/${editingNote.watchlistId}/note`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+        },
+        cache: "no-store",
         body: JSON.stringify({
           symbol: editingNote.symbol,
           note: "",
