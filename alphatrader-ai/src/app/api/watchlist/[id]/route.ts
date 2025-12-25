@@ -7,6 +7,10 @@ import {
   requireAuth,
 } from "@/lib/api-response";
 
+// Disable caching for this route
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 /**
  * GET /api/watchlist/[id]
  * Fetch a single watchlist by ID with stock data (includes stocks)

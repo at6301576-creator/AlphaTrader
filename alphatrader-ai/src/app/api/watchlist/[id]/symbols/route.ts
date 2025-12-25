@@ -9,6 +9,10 @@ import {
   ErrorCode,
 } from "@/lib/api-response";
 
+// Disable caching for this route
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 /**
  * POST /api/watchlist/[id]/symbols
  * Add a symbol to a watchlist

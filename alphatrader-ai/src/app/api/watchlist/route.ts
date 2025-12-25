@@ -9,6 +9,10 @@ import {
   ErrorCode,
 } from "@/lib/api-response";
 
+// Disable caching for this route
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 /**
  * GET /api/watchlist
  * Fetch all watchlists with stock data for authenticated user
