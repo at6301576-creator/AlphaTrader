@@ -133,13 +133,17 @@ export default function WatchlistPage() {
         const result = await response.json();
         console.log("[Watchlist] Create response:", result);
 
+        // Optimistically add the new watchlist to the UI immediately
+        const newWatchlistData = {
+          id: result.data?.watchlist?.id || Date.now().toString(),
+          name: newWatchlist.name,
+          description: newWatchlist.description,
+          stocks: [],
+        };
+
+        setWatchlists(prev => [newWatchlistData, ...prev]);
         setCreateDialogOpen(false);
         setNewWatchlist({ name: "", description: "" });
-
-        // Wait a moment then refresh
-        setTimeout(() => {
-          fetchWatchlists();
-        }, 100);
       } else {
         // Log error details for debugging
         const errorData = await response.json();
@@ -168,7 +172,9 @@ export default function WatchlistPage() {
       if (response.ok) {
         const result = await response.json();
         console.log("[Watchlist] Delete response:", result);
-        fetchWatchlists();
+
+        // Optimistically remove the watchlist from UI immediately
+        setWatchlists(prev => prev.filter(wl => wl.id !== watchlistId));
       } else {
         const errorData = await response.json();
         console.error("[Watchlist] Failed to delete:", response.status, errorData);
@@ -200,10 +206,24 @@ export default function WatchlistPage() {
       if (response.ok) {
         const result = await response.json();
         console.log("[Watchlist] Add stock response:", result);
+
+        // Optimistically add stock to the UI immediately
+        const addedStock = result.data?.stock;
+        if (addedStock) {
+          setWatchlists(prev => prev.map(wl => {
+            if (wl.id === selectedWatchlist) {
+              return {
+                ...wl,
+                stocks: [...wl.stocks, addedStock],
+              };
+            }
+            return wl;
+          }));
+        }
+
         setAddStockDialogOpen(false);
         setNewSymbol("");
         setSelectedWatchlist(null);
-        fetchWatchlists();
       } else {
         const errorData = await response.json();
         console.error("[Watchlist] Failed to add stock:", response.status, errorData);
@@ -233,7 +253,17 @@ export default function WatchlistPage() {
       if (response.ok) {
         const result = await response.json();
         console.log("[Watchlist] Remove stock response:", result);
-        fetchWatchlists();
+
+        // Optimistically remove stock from UI immediately
+        setWatchlists(prev => prev.map(wl => {
+          if (wl.id === watchlistId) {
+            return {
+              ...wl,
+              stocks: wl.stocks.filter(stock => stock.symbol !== symbol),
+            };
+          }
+          return wl;
+        }));
       } else {
         const errorData = await response.json();
         console.error("[Watchlist] Failed to remove stock:", response.status, errorData);
@@ -268,9 +298,24 @@ export default function WatchlistPage() {
       if (response.ok) {
         const result = await response.json();
         console.log("[Watchlist] Save note response:", result);
+
+        // Optimistically update the note in UI immediately
+        setWatchlists(prev => prev.map(wl => {
+          if (wl.id === editingNote.watchlistId) {
+            return {
+              ...wl,
+              stocks: wl.stocks.map(stock =>
+                stock.symbol === editingNote.symbol
+                  ? { ...stock, note: editingNote.note }
+                  : stock
+              ),
+            };
+          }
+          return wl;
+        }));
+
         setNoteDialogOpen(false);
         setEditingNote(null);
-        fetchWatchlists();
       } else {
         const errorData = await response.json();
         console.error("[Watchlist] Failed to save note:", response.status, errorData);
@@ -305,9 +350,24 @@ export default function WatchlistPage() {
       if (response.ok) {
         const result = await response.json();
         console.log("[Watchlist] Delete note response:", result);
+
+        // Optimistically delete the note in UI immediately
+        setWatchlists(prev => prev.map(wl => {
+          if (wl.id === editingNote.watchlistId) {
+            return {
+              ...wl,
+              stocks: wl.stocks.map(stock =>
+                stock.symbol === editingNote.symbol
+                  ? { ...stock, note: undefined }
+                  : stock
+              ),
+            };
+          }
+          return wl;
+        }));
+
         setNoteDialogOpen(false);
         setEditingNote(null);
-        fetchWatchlists();
       } else {
         const errorData = await response.json();
         console.error("[Watchlist] Failed to delete note:", response.status, errorData);
