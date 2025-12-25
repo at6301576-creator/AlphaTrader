@@ -142,7 +142,7 @@ async function getDashboardData(userId: string) {
 
     for (const watchlist of watchlists.slice(0, 3)) {
       try {
-        const symbolsArray = JSON.parse(watchlist.symbols);
+        const symbolsArray = JSON.parse(watchlist.symbols as string);
         if (Array.isArray(symbolsArray) && symbolsArray.length > 0) {
           const watchlistQuotes = await getQuotes(symbolsArray.slice(0, 5));
           watchlistQuotes.forEach((quote) => {

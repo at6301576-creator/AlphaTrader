@@ -70,7 +70,7 @@ export class PortfolioService extends BaseService {
     );
 
     // Return empty portfolio if no holdings
-    if (!portfolioItems || portfolioItems.length === 0) {
+    if (!portfolioItems || (Array.isArray(portfolioItems) && portfolioItems.length === 0)) {
       return {
         totalValue: 0,
         totalCost: 0,
@@ -84,7 +84,7 @@ export class PortfolioService extends BaseService {
     }
 
     // Fetch current market data
-    const symbols = portfolioItems.map((h) => h.symbol);
+    const symbols = (portfolioItems as any[]).map((h) => h.symbol);
     const quotes = await this.handleExternalApiCall(
       () => getQuotes(symbols),
       "Failed to fetch current market prices"
@@ -105,10 +105,10 @@ export class PortfolioService extends BaseService {
     );
 
     const sectorMap = new Map<string, string | null>();
-    stockCacheData.forEach((s) => sectorMap.set(s.symbol, s.sector));
+    (stockCacheData as any[]).forEach((s) => sectorMap.set(s.symbol, s.sector));
 
     // Calculate portfolio metrics
-    return this.calculatePortfolioMetrics(portfolioItems, quoteMap, sectorMap);
+    return this.calculatePortfolioMetrics(portfolioItems as any[], quoteMap, sectorMap);
   }
 
   /**
@@ -131,15 +131,16 @@ export class PortfolioService extends BaseService {
 
     if (existing) {
       // Update existing holding - average the cost
-      const totalShares = existing.shares + input.shares;
+      const existingTyped = existing as any;
+      const totalShares = existingTyped.shares + input.shares;
       const totalCostBasis =
-        existing.shares * existing.avgCost + input.shares * input.avgCost;
+        existingTyped.shares * existingTyped.avgCost + input.shares * input.avgCost;
       const newAvgCost = totalCostBasis / totalShares;
 
       await this.handleDatabaseOperation(
         () =>
           this.prisma.portfolio.update({
-            where: { id: existing.id },
+            where: { id: existingTyped.id },
             data: {
               shares: totalShares,
               avgCost: newAvgCost,
@@ -180,10 +181,10 @@ export class PortfolioService extends BaseService {
     const holding = await this.handleDatabaseOperation(
       () => this.prisma.portfolio.findUnique({ where: { id: holdingId } }),
       "Failed to fetch holding"
-    );
+    ) as any;
 
     this.assertExists(holding, "Holding not found");
-    this.assertOwnership(holding.userId, userId);
+    this.assertOwnership(holding?.userId, userId);
 
     // Validate updates
     if (updates.shares !== undefined) {
@@ -221,10 +222,10 @@ export class PortfolioService extends BaseService {
     const holding = await this.handleDatabaseOperation(
       () => this.prisma.portfolio.findUnique({ where: { id: holdingId } }),
       "Failed to fetch holding"
-    );
+    ) as any;
 
     this.assertExists(holding, "Holding not found");
-    this.assertOwnership(holding.userId, userId);
+    this.assertOwnership(holding?.userId, userId);
 
     // Delete holding
     await this.handleDatabaseOperation(
