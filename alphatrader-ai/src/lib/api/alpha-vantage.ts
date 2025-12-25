@@ -4,10 +4,18 @@
  * Free tier: 500 requests/day, 5 requests/minute
  */
 
+import { apiConfig } from "@/lib/config";
 import type { ChartDataPoint } from "@/types/stock";
-import type { Time } from "lightweight-charts";
 
-const ALPHA_VANTAGE_API_KEY = process.env.ALPHA_VANTAGE_API_KEY || "";
+// Lazy load API key to ensure env vars are loaded
+function getApiKey(): string {
+  const key = apiConfig.alphaVantageApiKey || process.env.ALPHA_VANTAGE_API_KEY || "";
+  if (!key) {
+    console.warn("[AlphaVantage] ⚠️  API key not configured. Set ALPHA_VANTAGE_API_KEY in .env");
+  }
+  return key;
+}
+
 const BASE_URL = "https://www.alphavantage.co/query";
 
 // In-memory cache with 24-hour TTL (conserve API calls)
@@ -33,11 +41,18 @@ async function makeRequest<T>(
   return new Promise((resolve) => {
     requestQueue.push(async () => {
       try {
+        const apiKey = getApiKey();
+        if (!apiKey) {
+          console.error("[AlphaVantage] Cannot make request: API key missing");
+          resolve(null);
+          return;
+        }
+
         const url = new URL(BASE_URL);
         Object.entries(params).forEach(([key, value]) => {
           url.searchParams.append(key, value);
         });
-        url.searchParams.append("apikey", ALPHA_VANTAGE_API_KEY);
+        url.searchParams.append("apikey", apiKey);
 
         const response = await fetch(url.toString());
         const data = await response.json();
@@ -124,9 +139,8 @@ export async function fetchDailyTimeSeries(
   Object.entries(timeSeries)
     .slice(0, 200) // Take last 200 days
     .forEach(([date, values]: [string, any]) => {
-      const timestamp = new Date(date).getTime() / 1000;
       chartData.push({
-        time: timestamp as Time,
+        time: date, // Keep as ISO date string
         open: parseFloat(values["1. open"]),
         high: parseFloat(values["2. high"]),
         low: parseFloat(values["3. low"]),
@@ -136,7 +150,7 @@ export async function fetchDailyTimeSeries(
     });
 
   // Sort by time (oldest first)
-  chartData.sort((a, b) => (a.time as number) - (b.time as number));
+  chartData.sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
 
   // Cache the result
   cache.set(cacheKey, { data: chartData, timestamp: Date.now() });
@@ -179,9 +193,8 @@ export async function fetchIntradayTimeSeries(
   Object.entries(timeSeries)
     .slice(0, 100)
     .forEach(([datetime, values]: [string, any]) => {
-      const timestamp = new Date(datetime).getTime() / 1000;
       chartData.push({
-        time: timestamp as Time,
+        time: datetime, // Keep as ISO datetime string
         open: parseFloat(values["1. open"]),
         high: parseFloat(values["2. high"]),
         low: parseFloat(values["3. low"]),
@@ -190,7 +203,7 @@ export async function fetchIntradayTimeSeries(
       });
     });
 
-  chartData.sort((a, b) => (a.time as number) - (b.time as number));
+  chartData.sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
 
   cache.set(cacheKey, { data: chartData, timestamp: Date.now() });
 

@@ -5,10 +5,12 @@
  * Fallback: Alpha Vantage (reliable, 500 req/day)
  */
 
-import yahooFinance from "yahoo-finance2";
+import YahooFinanceClass from "yahoo-finance2";
 import { fetchDailyTimeSeries } from "./alpha-vantage";
 import type { ChartDataPoint } from "@/types/stock";
-import type { Time } from "lightweight-charts";
+
+// Initialize Yahoo Finance (required for v3+)
+const yahooFinance = new YahooFinanceClass();
 
 // In-memory cache for chart data (30-minute TTL)
 interface CacheEntry {
@@ -60,7 +62,7 @@ export async function fetchChartDataForTechnicalAnalysis(
               quote.date !== null
           )
           .map((quote: any) => ({
-            time: (quote.date!.getTime() / 1000) as Time,
+            time: quote.date!.toISOString().split('T')[0], // Format as YYYY-MM-DD
             open: quote.open!,
             high: quote.high!,
             low: quote.low!,
