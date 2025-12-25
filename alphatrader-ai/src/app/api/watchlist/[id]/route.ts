@@ -8,6 +8,31 @@ import {
 } from "@/lib/api-response";
 
 /**
+ * GET /api/watchlist/[id]
+ * Get a single watchlist by ID
+ */
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await auth();
+    requireAuth(session);
+
+    const { id: watchlistId } = await params;
+
+    const watchlist = await watchlistService.getWatchlist(
+      session.user!.id,
+      watchlistId
+    );
+
+    return createSuccessResponse({ watchlist });
+  } catch (error) {
+    return createErrorResponse(error as Error);
+  }
+}
+
+/**
  * DELETE /api/watchlist/[id]
  * Delete a watchlist
  */
