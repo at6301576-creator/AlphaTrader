@@ -61,10 +61,12 @@ export default function WatchlistPage() {
       const response = await fetch("/api/watchlist");
       if (response.ok) {
         const data = await response.json();
-        setWatchlists(data);
+        // API returns { watchlists: [...] }, so extract the array
+        const watchlistsArray = data.watchlists || [];
+        setWatchlists(watchlistsArray);
 
         // Fetch sparklines for all symbols
-        const allSymbols = data.flatMap((wl: Watchlist) => wl.stocks.map((s) => s.symbol));
+        const allSymbols = watchlistsArray.flatMap((wl: Watchlist) => wl.stocks.map((s) => s.symbol));
         if (allSymbols.length > 0) {
           fetchSparklines(allSymbols);
         }
