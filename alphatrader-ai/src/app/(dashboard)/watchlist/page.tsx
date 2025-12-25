@@ -59,7 +59,9 @@ export default function WatchlistPage() {
   const fetchWatchlists = async () => {
     try {
       console.log("[Watchlist] Fetching watchlists...");
-      const response = await fetch("/api/watchlist", {
+      // Add timestamp to bust cache
+      const timestamp = new Date().getTime();
+      const response = await fetch(`/api/watchlist?_t=${timestamp}`, {
         cache: "no-store",
         headers: {
           "Cache-Control": "no-cache, no-store, must-revalidate",
