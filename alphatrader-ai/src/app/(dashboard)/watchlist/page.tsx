@@ -109,9 +109,15 @@ export default function WatchlistPage() {
         setCreateDialogOpen(false);
         setNewWatchlist({ name: "", description: "" });
         fetchWatchlists();
+      } else {
+        // Log error details for debugging
+        const errorData = await response.json();
+        console.error("Failed to create watchlist:", response.status, errorData);
+        alert(`Failed to create watchlist: ${errorData.message || 'Unknown error'}`);
       }
     } catch (error) {
       console.error("Error creating watchlist:", error);
+      alert(`Error creating watchlist: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
