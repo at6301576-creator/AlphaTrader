@@ -142,15 +142,25 @@ export default function WatchlistPage() {
 
   const handleDeleteWatchlist = async (watchlistId: string) => {
     try {
+      console.log("[Watchlist] Deleting watchlist:", watchlistId);
       const response = await fetch(`/api/watchlist/${watchlistId}`, {
         method: "DELETE",
       });
 
+      console.log("[Watchlist] Delete response status:", response.status);
+
       if (response.ok) {
+        const result = await response.json();
+        console.log("[Watchlist] Delete response:", result);
         fetchWatchlists();
+      } else {
+        const errorData = await response.json();
+        console.error("[Watchlist] Failed to delete:", response.status, errorData);
+        alert(`Failed to delete watchlist: ${errorData.error?.message || errorData.message || 'Unknown error'}`);
       }
     } catch (error) {
-      console.error("Error deleting watchlist:", error);
+      console.error("[Watchlist] Error deleting watchlist:", error);
+      alert(`Error deleting watchlist: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
@@ -158,36 +168,56 @@ export default function WatchlistPage() {
     if (!selectedWatchlist || !newSymbol.trim()) return;
 
     try {
+      console.log("[Watchlist] Adding stock:", newSymbol, "to watchlist:", selectedWatchlist);
       const response = await fetch(`/api/watchlist/${selectedWatchlist}/symbols`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ symbol: newSymbol.toUpperCase() }),
       });
 
+      console.log("[Watchlist] Add stock response status:", response.status);
+
       if (response.ok) {
+        const result = await response.json();
+        console.log("[Watchlist] Add stock response:", result);
         setAddStockDialogOpen(false);
         setNewSymbol("");
         setSelectedWatchlist(null);
         fetchWatchlists();
+      } else {
+        const errorData = await response.json();
+        console.error("[Watchlist] Failed to add stock:", response.status, errorData);
+        alert(`Failed to add stock: ${errorData.error?.message || errorData.message || 'Unknown error'}`);
       }
     } catch (error) {
-      console.error("Error adding stock:", error);
+      console.error("[Watchlist] Error adding stock:", error);
+      alert(`Error adding stock: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
   const handleRemoveStock = async (watchlistId: string, symbol: string) => {
     try {
+      console.log("[Watchlist] Removing stock:", symbol, "from watchlist:", watchlistId);
       const response = await fetch(`/api/watchlist/${watchlistId}/symbols`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ symbol }),
       });
 
+      console.log("[Watchlist] Remove stock response status:", response.status);
+
       if (response.ok) {
+        const result = await response.json();
+        console.log("[Watchlist] Remove stock response:", result);
         fetchWatchlists();
+      } else {
+        const errorData = await response.json();
+        console.error("[Watchlist] Failed to remove stock:", response.status, errorData);
+        alert(`Failed to remove stock: ${errorData.error?.message || errorData.message || 'Unknown error'}`);
       }
     } catch (error) {
-      console.error("Error removing stock:", error);
+      console.error("[Watchlist] Error removing stock:", error);
+      alert(`Error removing stock: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
@@ -195,6 +225,7 @@ export default function WatchlistPage() {
     if (!editingNote) return;
 
     try {
+      console.log("[Watchlist] Saving note for:", editingNote.symbol);
       const response = await fetch(`/api/watchlist/${editingNote.watchlistId}/note`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -204,13 +235,22 @@ export default function WatchlistPage() {
         }),
       });
 
+      console.log("[Watchlist] Save note response status:", response.status);
+
       if (response.ok) {
+        const result = await response.json();
+        console.log("[Watchlist] Save note response:", result);
         setNoteDialogOpen(false);
         setEditingNote(null);
         fetchWatchlists();
+      } else {
+        const errorData = await response.json();
+        console.error("[Watchlist] Failed to save note:", response.status, errorData);
+        alert(`Failed to save note: ${errorData.error?.message || errorData.message || 'Unknown error'}`);
       }
     } catch (error) {
-      console.error("Error saving note:", error);
+      console.error("[Watchlist] Error saving note:", error);
+      alert(`Error saving note: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
@@ -218,6 +258,7 @@ export default function WatchlistPage() {
     if (!editingNote) return;
 
     try {
+      console.log("[Watchlist] Deleting note for:", editingNote.symbol);
       const response = await fetch(`/api/watchlist/${editingNote.watchlistId}/note`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -227,13 +268,22 @@ export default function WatchlistPage() {
         }),
       });
 
+      console.log("[Watchlist] Delete note response status:", response.status);
+
       if (response.ok) {
+        const result = await response.json();
+        console.log("[Watchlist] Delete note response:", result);
         setNoteDialogOpen(false);
         setEditingNote(null);
         fetchWatchlists();
+      } else {
+        const errorData = await response.json();
+        console.error("[Watchlist] Failed to delete note:", response.status, errorData);
+        alert(`Failed to delete note: ${errorData.error?.message || errorData.message || 'Unknown error'}`);
       }
     } catch (error) {
-      console.error("Error deleting note:", error);
+      console.error("[Watchlist] Error deleting note:", error);
+      alert(`Error deleting note: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
