@@ -294,7 +294,7 @@ export class WatchlistService extends BaseService {
     userId: string,
     watchlistId: string,
     symbolsToAdd: string[]
-  ): Promise<void> {
+  ): Promise<WatchlistResponse> {
     // Verify ownership
     const watchlist = await this.handleDatabaseOperation(
       () =>
@@ -338,6 +338,9 @@ export class WatchlistService extends BaseService {
         }),
       "Failed to add symbols to watchlist"
     );
+
+    // Return the updated watchlist with stock data
+    return this.getWatchlist(userId, watchlistId);
   }
 
   /**

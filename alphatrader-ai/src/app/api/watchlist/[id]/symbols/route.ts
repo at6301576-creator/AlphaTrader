@@ -37,13 +37,19 @@ export async function POST(
       );
     }
 
-    await watchlistService.addSymbols(
+    const updatedWatchlist = await watchlistService.addSymbols(
       session.user!.id,
       watchlistId,
       [symbol.toUpperCase()]
     );
 
-    return createSuccessResponse({ message: "Symbol added successfully" });
+    // Get the stock data that was just added
+    const addedStock = updatedWatchlist.stocks.find(s => s.symbol === symbol.toUpperCase());
+
+    return createSuccessResponse({
+      message: "Symbol added successfully",
+      stock: addedStock,
+    });
   } catch (error) {
     return createErrorResponse(error as Error);
   }
