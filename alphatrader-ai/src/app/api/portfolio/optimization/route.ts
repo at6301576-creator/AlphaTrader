@@ -117,8 +117,8 @@ export async function GET(request: NextRequest) {
 
     const sectors = Object.entries(sectorAllocation).map(([sector, value]) => ({
       sector,
-      value,
-      percentage: totalValue > 0 ? (value / totalValue) * 100 : 0,
+      value: value as number,
+      percentage: totalValue > 0 ? ((value as number) / totalValue) * 100 : 0,
     }));
 
     // Calculate volatility if we have snapshots

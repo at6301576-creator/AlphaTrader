@@ -4,9 +4,9 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
+import { auth } from "@/lib/auth";
 import { interpretScannerQuery } from "@/lib/ai/scanner-interpreter";
-import { checkRateLimit } from "@/lib/rate-limit";
+import { createSecureErrorResponse, createSecureResponse, rateLimit } from "@/lib/security";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,23 +18,22 @@ interface InterpretRequest {
 export async function POST(request: NextRequest) {
   try {
     // 1. Authenticate user
-    const { userId } = await auth();
+    const session = await auth();
 
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!session?.user?.id) {
+      return createSecureErrorResponse("Unauthorized", 401);
     }
 
     // 2. Rate limiting (20 requests per hour per user)
-    const rateLimitKey = `scanner-interpret:${userId}`;
-    const rateLimitResult = await checkRateLimit(rateLimitKey, 20, 60 * 60); // 20 per hour
+    const rateLimitResult = rateLimit(`scanner-interpret:${session.user.id}`, {
+      interval: 60 * 60 * 1000, // 1 hour
+      maxRequests: 20,
+    });
 
-    if (!rateLimitResult.allowed) {
-      return NextResponse.json(
-        {
-          error: "Rate limit exceeded",
-          retryAfter: rateLimitResult.retryAfter,
-        },
-        { status: 429 }
+    if (!rateLimitResult.success) {
+      return createSecureErrorResponse(
+        "Too many interpretation requests. Please try again later.",
+        429
       );
     }
 
@@ -42,15 +41,15 @@ export async function POST(request: NextRequest) {
     const body = (await request.json()) as InterpretRequest;
 
     if (!body.query || typeof body.query !== "string") {
-      return NextResponse.json({ error: "Query is required" }, { status: 400 });
+      return createSecureErrorResponse("Query is required", 400);
     }
 
     if (body.query.length > 500) {
-      return NextResponse.json({ error: "Query too long (max 500 characters)" }, { status: 400 });
+      return createSecureErrorResponse("Query too long (max 500 characters)", 400);
     }
 
     // 4. Interpret query using AI
-    console.log(`🤖 Interpreting scanner query for user ${userId}: "${body.query}"`);
+    console.log(`🤖 Interpreting scanner query for user ${session.user.id}: "${body.query}"`);
 
     const interpretation = await interpretScannerQuery(body.query);
 
@@ -60,10 +59,9 @@ export async function POST(request: NextRequest) {
     });
 
     // 5. Return interpretation
-    return NextResponse.json({
+    return createSecureResponse({
       success: true,
       interpretation,
-      remaining: rateLimitResult.remaining,
     });
   } catch (error) {
     console.error("Scanner interpretation error:", error);
@@ -71,22 +69,16 @@ export async function POST(request: NextRequest) {
     // Handle specific errors
     if (error instanceof Error) {
       if (error.message.includes("OpenAI")) {
-        return NextResponse.json(
-          {
-            error: "AI service temporarily unavailable",
-            details: error.message,
-          },
-          { status: 503 }
+        return createSecureErrorResponse(
+          "AI service temporarily unavailable. Please try again.",
+          503
         );
       }
     }
 
-    return NextResponse.json(
-      {
-        error: "Failed to interpret query",
-        details: error instanceof Error ? error.message : "Unknown error",
-      },
-      { status: 500 }
+    return createSecureErrorResponse(
+      error instanceof Error ? error.message : "Failed to interpret query",
+      500
     );
   }
 }

@@ -110,7 +110,7 @@ export async function GET(request: NextRequest) {
       totalValue += value;
       totalCost += costBasis;
 
-      const sector = sectorMap.get(holding.symbol) || "Unknown";
+      const sector = (sectorMap.get(holding.symbol) as string | undefined) || "Unknown";
       sectorAllocations.set(sector, (sectorAllocations.get(sector) || 0) + value);
 
       holdings.push({
@@ -330,7 +330,7 @@ export async function POST() {
       totalCost += costBasis;
       totalDayChange += dayChange;
 
-      const sector = sectorMap.get(holding.symbol) || "Unknown";
+      const sector = (sectorMap.get(holding.symbol) as string | undefined) || "Unknown";
       sectorAllocations.set(sector, (sectorAllocations.get(sector) || 0) + value);
 
       holdings.push({
