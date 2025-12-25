@@ -45,9 +45,7 @@ export async function PATCH(
     }
 
     // Parse symbols with notes
-    const symbolsData = typeof watchlist.symbols === 'string'
-      ? JSON.parse(watchlist.symbols || "[]")
-      : (watchlist.symbols || []);
+    const symbolsData = JSON.parse((watchlist.symbols as string) || "[]");
 
     // Check if symbols is array of strings (old format) or array of objects (new format with notes)
     let updatedSymbols;

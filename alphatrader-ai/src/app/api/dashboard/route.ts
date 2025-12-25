@@ -104,9 +104,7 @@ export async function GET() {
 
     for (const watchlist of watchlists) {
       try {
-        const symbolsArray = typeof watchlist.symbols === 'string'
-          ? JSON.parse(watchlist.symbols)
-          : watchlist.symbols;
+        const symbolsArray = JSON.parse(watchlist.symbols as string);
         if (Array.isArray(symbolsArray) && symbolsArray.length > 0) {
           const watchlistQuotes = await getQuotes(symbolsArray.slice(0, 5));
           watchlistQuotes.forEach((quote) => {
@@ -174,9 +172,7 @@ export async function GET() {
         count: watchlists.length,
         totalStocks: watchlists.reduce((sum, w) => {
           try {
-            const symbols = typeof w.symbols === 'string'
-              ? JSON.parse(w.symbols)
-              : w.symbols;
+            const symbols = JSON.parse(w.symbols as string);
             return sum + (Array.isArray(symbols) ? symbols.length : 0);
           } catch {
             return sum;

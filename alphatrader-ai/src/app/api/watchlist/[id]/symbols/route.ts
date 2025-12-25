@@ -38,9 +38,7 @@ export async function POST(
     }
 
     // Parse existing symbols and add the new one
-    const symbolsData = typeof watchlist.symbols === 'string'
-      ? JSON.parse(watchlist.symbols || "[]")
-      : (watchlist.symbols || []);
+    const symbolsData = JSON.parse((watchlist.symbols as string) || "[]");
     const symbolUpper = symbol.toUpperCase();
 
     // Handle both old format (array of strings) and new format (array of objects)
@@ -113,9 +111,7 @@ export async function DELETE(
     }
 
     // Parse existing symbols and remove the specified one
-    const symbolsData = typeof watchlist.symbols === 'string'
-      ? JSON.parse(watchlist.symbols || "[]")
-      : (watchlist.symbols || []);
+    const symbolsData = JSON.parse((watchlist.symbols as string) || "[]");
     const symbolUpper = symbol.toUpperCase();
 
     // Handle both old format (array of strings) and new format (array of objects)
